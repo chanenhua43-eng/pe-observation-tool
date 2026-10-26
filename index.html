@@ -182,13 +182,16 @@
     let totalSeconds = 0;
     let cycleCount = 0;
 
-    // 安全的頁籤切換邏輯
+    // 頁籤切換邏輯
     function switchTab(tabId, evt) {
       document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
       document.querySelectorAll('.system-panel').forEach(panel => panel.classList.remove('active'));
       
       if (evt && evt.currentTarget) {
         evt.currentTarget.classList.add('active');
+      } else {
+        const btnIndex = tabId === 'cafias' ? 0 : (tabId === 'dac' ? 1 : 2);
+        document.querySelectorAll('.tab-button')[btnIndex].classList.add('active');
       }
       document.getElementById(tabId).classList.add('active');
     }
@@ -434,7 +437,7 @@
       renderDacMatrix();
     }
 
-    // --- CSFI ---
+    // --- CSFI (完整對照表一，包含 88, 89, 99 學生之間行為) ---
     const csfiCategories = [
       { cat: "教師行為", name: "讚美 (2+12)", id: "csfi_2_12" },
       { cat: "教師行為", name: "接納 (3+13)", id: "csfi_3_13" },
@@ -443,8 +446,11 @@
       { cat: "教師行為", name: "給予指導 (6+16)", id: "csfi_6_16" },
       { cat: "教師行為", name: "批評 (7+17)", id: "csfi_7_17" },
       { cat: "學生行為", name: "可預期的反應 (8+18)", id: "csfi_8_18" },
+      { cat: "學生行為", name: "學生之間可預期的反應 (88)", id: "csfi_88" },
       { cat: "學生行為", name: "理解性的行為 (8+18)", id: "csfi_8_18_alt" },
+      { cat: "學生行為", name: "學生之間理解性的行為 (89)", id: "csfi_89" },
       { cat: "學生行為", name: "主動的行為 (9+19)", id: "csfi_9_19" },
+      { cat: "學生行為", name: "學生之間主動的行為 (99)", id: "csfi_99" },
       { cat: "其他", name: "混亂或安靜 (10/20)", id: "csfi_10_20" }
     ];
 
