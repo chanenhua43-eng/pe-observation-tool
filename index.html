@@ -12,13 +12,15 @@
     
     /* Timer Control Card */
     .timer-card { background: #2c3e50; color: white; padding: 15px 20px; border-radius: 8px; margin-bottom: 20px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-    .timer-info { display: flex; align-items: center; gap: 20px; }
+    .timer-info { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
     .phase-badge { padding: 8px 16px; border-radius: 20px; font-weight: bold; font-size: 16px; text-transform: uppercase; }
     .phase-observe { background-color: #2ecc71; color: white; }
     .phase-record { background-color: #e67e22; color: white; }
     .phase-idle { background-color: #7f8c8d; color: white; }
     .time-display { font-size: 24px; font-family: monospace; font-weight: bold; }
-    .timer-controls { display: flex; gap: 10px; }
+    .timer-setting-inputs { display: flex; align-items: center; gap: 8px; font-size: 13px; background: rgba(255,255,255,0.1); padding: 5px 10px; border-radius: 5px; }
+    .timer-setting-inputs input { width: 50px; padding: 4px; border: 1px solid #ccc; border-radius: 3px; text-align: center; font-weight: bold; }
+    .timer-controls { display: flex; gap: 10px; flex-wrap: wrap; }
 
     /* Nav Tabs */
     .tab-container { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; }
@@ -29,8 +31,8 @@
     .system-panel { display: none; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
     .system-panel.active { display: block; }
 
-    .form-group { margin-bottom: 15px; display: flex; gap: 15px; align-items: center; flex-wrap: wrap; }
-    .form-group label { font-weight: bold; }
+    .form-group { margin-bottom: 15px; display: flex; gap: 15px; align-items: center; flex-wrap: wrap; background: #f9f9f9; padding: 12px; border-radius: 6px; border: 1px solid #eee; }
+    .form-group label { font-weight: bold; font-size: 14px; }
     .form-group input, .form-group select { padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
 
     .student-focus-box { background: #e8f4f8; border: 1px solid #3498db; padding: 12px; border-radius: 6px; margin-bottom: 15px; display: flex; align-items: center; gap: 15px; }
@@ -78,6 +80,13 @@
         <div class="time-display" id="timer-display">週期倒數: 10s | 總計: 00:00</div>
         <small id="cycle-count-display">目前週期: #0 (觀察 10s / 記錄 10s)</small>
       </div>
+      <!-- 自訂倒數秒數設定區域 -->
+      <div class="timer-setting-inputs">
+        <label>觀察秒數:</label>
+        <input type="number" id="setting-observe-sec" value="10" min="1" onchange="updateTimerSettings()">
+        <label>記錄秒數:</label>
+        <input type="number" id="setting-record-sec" value="10" min="1" onchange="updateTimerSettings()">
+      </div>
     </div>
     <div class="timer-controls">
       <button class="btn btn-primary" id="start-btn" onclick="toggleTimer()">開始觀察計時</button>
@@ -99,9 +108,9 @@
   <div id="cafias" class="system-panel active">
     <h2>CAFIAS 系統觀察量表</h2>
     <div class="form-group">
-      <label>觀察教師：</label><input type="text" id="cafias-teacher" placeholder="輸入教師姓名">
-      <label>觀察日期：</label><input type="date" id="cafias-date">
-      <label>任課班級：</label><input type="text" id="cafias-class" placeholder="如：八年二班">
+      <label>觀察教師：</label><input type="text" class="meta-teacher" placeholder="輸入教師姓名" oninput="syncMetaInfo(this)">
+      <label>觀察日期：</label><input type="date" class="meta-date" onchange="syncMetaInfo(this)">
+      <label>任課班級：</label><input type="text" class="meta-class" placeholder="如：八年二班" oninput="syncMetaInfo(this)">
     </div>
 
     <div class="counter-grid" id="cafias-counters"></div>
@@ -125,6 +134,11 @@
   <!-- DAC Panel -->
   <div id="dac" class="system-panel">
     <h2>DAC 觀察系統總結記錄表</h2>
+    <div class="form-group">
+      <label>觀察教師：</label><input type="text" class="meta-teacher" placeholder="輸入教師姓名" oninput="syncMetaInfo(this)">
+      <label>觀察日期：</label><input type="date" class="meta-date" onchange="syncMetaInfo(this)">
+      <label>任課班級：</label><input type="text" class="meta-class" placeholder="如：八年二班" oninput="syncMetaInfo(this)">
+    </div>
     
     <!-- 當前目標學生選擇 -->
     <div class="student-focus-box">
@@ -154,6 +168,12 @@
   <!-- CSFI Panel -->
   <div id="csfi" class="system-panel">
     <h2>CSFI 觀察紀錄表</h2>
+    <div class="form-group">
+      <label>觀察教師：</label><input type="text" class="meta-teacher" placeholder="輸入教師姓名" oninput="syncMetaInfo(this)">
+      <label>觀察日期：</label><input type="date" class="meta-date" onchange="syncMetaInfo(this)">
+      <label>任課班級：</label><input type="text" class="meta-class" placeholder="如：八年二班" oninput="syncMetaInfo(this)">
+    </div>
+
     <div class="counter-grid" id="csfi-counters"></div>
 
     <h3>CSFI 行為次數統計</h3>
@@ -177,15 +197,41 @@
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx5_MORjdhWNBLCKyLD64sA3KxAOFt3JAzIlYn-9KGHs5hUney1-1PMtZXcV0lJsOCA/exec";
 
     let actionLog = [];
-    const OBSERVE_DURATION = 10;
-    const RECORD_DURATION = 10;
+    let observeDuration = 10;
+    let recordDuration = 10;
     
     let timerRunning = false;
     let timerInterval = null;
     let currentPhase = 'idle'; // 'observe', 'record', 'idle'
-    let phaseTimeLeft = OBSERVE_DURATION;
+    let phaseTimeLeft = observeDuration;
     let totalSeconds = 0;
     let cycleCount = 0;
+
+    // 同步三個分頁的基本資訊欄位（教師、日期、班級）
+    function syncMetaInfo(changedInput) {
+      const value = changedInput.value;
+      if (changedInput.classList.contains('meta-teacher')) {
+        document.querySelectorAll('.meta-teacher').forEach(el => el.value = value);
+      } else if (changedInput.classList.contains('meta-date')) {
+        document.querySelectorAll('.meta-date').forEach(el => el.value = value);
+      } else if (changedInput.classList.contains('meta-class')) {
+        document.querySelectorAll('.meta-class').forEach(el => el.value = value);
+      }
+    }
+
+    // 更新倒數秒數設定
+    function updateTimerSettings() {
+      const obsVal = parseInt(document.getElementById('setting-observe-sec').value, 10);
+      const recVal = parseInt(document.getElementById('setting-record-sec').value, 10);
+      
+      observeDuration = obsVal > 0 ? obsVal : 10;
+      recordDuration = recVal > 0 ? recVal : 10;
+
+      if (!timerRunning && currentPhase === 'idle') {
+        phaseTimeLeft = observeDuration;
+      }
+      updateTimerUI();
+    }
 
     // 頁籤切換邏輯
     function switchTab(tabId, evt) {
@@ -215,7 +261,7 @@
       document.getElementById('start-btn').innerText = "暫停計時";
       if (currentPhase === 'idle') {
         currentPhase = 'observe';
-        phaseTimeLeft = OBSERVE_DURATION;
+        phaseTimeLeft = observeDuration;
         cycleCount = 1;
       }
       updateTimerUI();
@@ -227,11 +273,11 @@
         if (phaseTimeLeft <= 0) {
           if (currentPhase === 'observe') {
             currentPhase = 'record';
-            phaseTimeLeft = RECORD_DURATION;
+            phaseTimeLeft = recordDuration;
             playBeep(800, 0.2);
           } else {
             currentPhase = 'observe';
-            phaseTimeLeft = OBSERVE_DURATION;
+            phaseTimeLeft = observeDuration;
             cycleCount++;
             playBeep(1200, 0.2);
           }
@@ -249,7 +295,7 @@
     function resetTimer() {
       pauseTimer();
       currentPhase = 'idle';
-      phaseTimeLeft = OBSERVE_DURATION;
+      phaseTimeLeft = observeDuration;
       totalSeconds = 0;
       cycleCount = 0;
       document.getElementById('start-btn').innerText = "開始觀察計時";
@@ -272,7 +318,7 @@
       const totalMins = String(Math.floor(totalSeconds / 60)).padStart(2, '0');
       const totalSecs = String(totalSeconds % 60).padStart(2, '0');
       document.getElementById('timer-display').innerText = `週期倒數: ${phaseTimeLeft}s | 總計: ${totalMins}:${totalSecs}`;
-      document.getElementById('cycle-count-display').innerText = `目前週期: #${cycleCount} (觀察 ${OBSERVE_DURATION}s / 記錄 ${RECORD_DURATION}s)`;
+      document.getElementById('cycle-count-display').innerText = `目前週期: #${cycleCount} (觀察 ${observeDuration}s / 記錄 ${recordDuration}s)`;
     }
 
     function playBeep(freq, duration) {
@@ -360,7 +406,7 @@
       updateCafiasTable();
     }
 
-    // --- DAC 觀察系統 (根據表二定義，轉為卡片按鈕) ---
+    // --- DAC 觀察系統 ---
     const dacCategories = [
       { name: "獎勵", verbalCode: 2, nonVerbalCode: 12 },
       { name: "接納", verbalCode: 3, nonVerbalCode: 13 },
@@ -380,18 +426,15 @@
     let dacMatrix = {};
 
     function initDac() {
-      // 初始化學生下拉選單
       const stuSelect = document.getElementById('dac-student-select');
       stuSelect.innerHTML = '';
       students.forEach(s => stuSelect.innerHTML += `<option value="${s}">學生 ${s}</option>`);
 
-      // 初始化矩陣資料
       students.forEach(s => {
         dacMatrix[s] = {};
         dacCodes.forEach(c => dacMatrix[s][c] = 0);
       });
 
-      // 渲染 DAC 卡片按鈕
       const container = document.getElementById('dac-counters');
       container.innerHTML = '';
       dacCategories.forEach(cat => {
@@ -556,6 +599,7 @@
     }
 
     function logAction(systemName, description) {
+      const teacherVal = document.querySelector('.meta-teacher').value || "未指定";
       actionLog.push({
         cycle: cycleCount,
         phase: currentPhase === 'observe' ? '觀察中' : (currentPhase === 'record' ? '記錄中' : '未啟動'),
@@ -571,11 +615,15 @@
       statusDiv.className = 'sync-loading';
       statusDiv.innerText = '⏳ 正在將觀察數據同步至 Google 試算表...';
 
+      const teacherVal = document.querySelector('.meta-teacher').value || "未指定";
+      const dateVal = document.querySelector('.meta-date').value || new Date().toISOString().split('T')[0];
+      const classVal = document.querySelector('.meta-class').value || "未指定";
+
       const payload = {
         meta: {
-          teacher: document.getElementById('cafias-teacher').value || "未指定",
-          date: document.getElementById('cafias-date').value || new Date().toISOString().split('T')[0],
-          className: document.getElementById('cafias-class').value || "未指定"
+          teacher: teacherVal,
+          date: dateVal,
+          className: classVal
         },
         actionStack: actionLog
       };
@@ -600,7 +648,8 @@
     }
 
     window.onload = function() {
-      document.getElementById('cafias-date').valueAsDate = new Date();
+      const todayStr = new Date().toISOString().split('T')[0];
+      document.querySelectorAll('.meta-date').forEach(el => el.value = todayStr);
       initCafias();
       initDac();
       initCsfi();
