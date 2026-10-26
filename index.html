@@ -47,6 +47,7 @@
     .btn-danger { background: #e74c3c; color: white; }
     .btn-secondary { background: #95a5a6; color: white; }
     .btn-cloud { background: #8e44ad; color: white; font-weight: bold; }
+    .btn-pdf { background: #e67e22; color: white; font-weight: bold; }
     .btn:hover { opacity: 0.9; }
 
     .counter-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; margin-top: 15px; }
@@ -66,6 +67,8 @@
     .sync-error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
     .sync-loading { background-color: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
   </style>
+  <!-- 載入 HTML 轉 PDF 工具庫 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
 <body>
 
@@ -91,6 +94,7 @@
     <div class="timer-controls">
       <button class="btn btn-primary" id="start-btn" onclick="toggleTimer()">開始觀察計時</button>
       <button class="btn btn-secondary" onclick="resetTimer()">重置計時器</button>
+      <button class="btn btn-pdf" onclick="generatePDFReport()">📄 匯出 PDF 觀察報表</button>
       <button class="btn btn-cloud" onclick="uploadDataToGoogleSheet()">☁️ 同步至 Google 試算表</button>
     </div>
   </div>
@@ -202,12 +206,11 @@
     
     let timerRunning = false;
     let timerInterval = null;
-    let currentPhase = 'idle'; // 'observe', 'record', 'idle'
+    let currentPhase = 'idle';
     let phaseTimeLeft = observeDuration;
     let totalSeconds = 0;
     let cycleCount = 0;
 
-    // 同步三個分頁的基本資訊欄位（教師、日期、班級）
     function syncMetaInfo(changedInput) {
       const value = changedInput.value;
       if (changedInput.classList.contains('meta-teacher')) {
@@ -219,7 +222,6 @@
       }
     }
 
-    // 更新倒數秒數設定
     function updateTimerSettings() {
       const obsVal = parseInt(document.getElementById('setting-observe-sec').value, 10);
       const recVal = parseInt(document.getElementById('setting-record-sec').value, 10);
@@ -233,7 +235,6 @@
       updateTimerUI();
     }
 
-    // 頁籤切換邏輯
     function switchTab(tabId, evt) {
       document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
       document.querySelectorAll('.system-panel').forEach(panel => panel.classList.remove('active'));
@@ -247,7 +248,6 @@
       document.getElementById(tabId).classList.add('active');
     }
 
-    // 計時器邏輯
     function toggleTimer() {
       if (!timerRunning) {
         startTimer();
@@ -599,7 +599,6 @@
     }
 
     function logAction(systemName, description) {
-      const teacherVal = document.querySelector('.meta-teacher').value || "未指定";
       actionLog.push({
         cycle: cycleCount,
         phase: currentPhase === 'observe' ? '觀察中' : (currentPhase === 'record' ? '記錄中' : '未啟動'),
@@ -607,6 +606,39 @@
         description: description,
         timestamp: new Date().toLocaleTimeString()
       });
+    }
+
+    // 匯出 PDF 報表功能
+    function generatePDFReport() {
+      const teacherVal = document.querySelector('.meta-teacher').value || '未填寫';
+      const dateVal = document.querySelector('.meta-date').value || new Date().toISOString().split('T')[0];
+      const classVal = document.querySelector('.meta-class').value || '未填寫';
+
+      const opt = {
+        margin:       10,
+        filename:     `體育教學觀察總報表_${teacherVal}_${dateVal}.pdf`,
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2 },
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' }
+      };
+
+      const reportContainer = document.createElement('div');
+      reportContainer.style.padding = '10px';
+      reportContainer.innerHTML = `
+        <h1 style="text-align:center;">體育教學觀察系統 - 綜合觀察分析報表</h1>
+        <p style="text-align:center; color:#555;">觀察教師：<b>${teacherVal}</b> | 觀察日期：<b>${dateVal}</b> | 任課班級：<b>${classVal}</b></p>
+        <hr>
+        <h3>一、 CAFIAS 觀察統計結果</h3>
+        ${document.querySelector('#cafias table').outerHTML}
+        <br><br>
+        <h3>二、 DAC 互動分析矩陣</h3>
+        ${document.querySelector('#dac table').outerHTML}
+        <br><br>
+        <h3>三、 CSFI 行為次數統計表</h3>
+        ${document.querySelector('#csfi table').outerHTML}
+      `;
+
+      html2pdf().set(opt).from(reportContainer).save();
     }
 
     function uploadDataToGoogleSheet() {
