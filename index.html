@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+html_code = """<!DOCTYPE html>
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8">
@@ -10,7 +10,6 @@
     h1 { text-align: center; color: #2c3e50; margin-bottom: 5px; }
     .subtitle { text-align: center; color: #7f8c8d; margin-bottom: 20px; font-size: 14px; }
     
-    /* Timer Control Card */
     .timer-card { background: #2c3e50; color: white; padding: 15px 20px; border-radius: 8px; margin-bottom: 20px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
     .timer-info { display: flex; align-items: center; gap: 20px; }
     .phase-badge { padding: 8px 16px; border-radius: 20px; font-weight: bold; font-size: 16px; text-transform: uppercase; }
@@ -20,12 +19,10 @@
     .time-display { font-size: 24px; font-family: monospace; font-weight: bold; }
     .timer-controls { display: flex; gap: 10px; }
 
-    /* Nav Tabs */
     .tab-container { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; }
     .tab-button { padding: 10px 20px; font-size: 16px; border: none; background: #e0e0e0; cursor: pointer; border-radius: 5px; transition: 0.3s; }
     .tab-button.active { background: #3498db; color: white; font-weight: bold; }
     
-    /* Panels */
     .system-panel { display: none; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
     .system-panel.active { display: block; }
 
@@ -56,7 +53,6 @@
 
     .record-log { margin-top: 20px; max-height: 150px; overflow-y: auto; background: #f9f9f9; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px; }
 
-    /* Cloud Sync Status Toast */
     #sync-status { display: none; padding: 10px; margin-top: 10px; border-radius: 4px; text-align: center; font-weight: bold; }
     .sync-success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
     .sync-error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
@@ -68,7 +64,6 @@
   <h1>體育教學電腦觀察系統</h1>
   <div class="subtitle">整合 CAFIAS / DAC / CSFI 時間取樣觀察與 Google Sheet 自動串接功能</div>
 
-  <!-- 計時器與控制欄 -->
   <div class="timer-card">
     <div class="timer-info">
       <div id="phase-badge" class="phase-badge phase-idle">未開始</div>
@@ -86,11 +81,10 @@
 
   <div id="sync-status"></div>
 
-  <!-- 導覽頁籤 -->
   <div class="tab-container">
-    <button class="tab-button active" onclick="switchTab('cafias')">CAFIAS 觀察表</button>
-    <button class="tab-button" onclick="switchTab('dac')">DAC 觀察系統</button>
-    <button class="tab-button" onclick="switchTab('csfi')">CSFI 對照記錄</button>
+    <button class="tab-button active" onclick="switchTab('cafias', event)">CAFIAS 觀察表</button>
+    <button class="tab-button" onclick="switchTab('dac', event)">DAC 觀察系統</button>
+    <button class="tab-button" onclick="switchTab('csfi', event)">CSFI 對照記錄</button>
   </div>
 
   <!-- CAFIAS Panel -->
@@ -169,33 +163,29 @@
   </div>
 
   <script>
-    // 直接嵌入您的 Google Apps Script 部署 URL
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx5_MORjdhWNBLCKyLD64sA3KxAOFt3JAzIlYn-9KGHs5hUney1-1PMtZXcV0lJsOCA/exec";
 
-    // 全局資料記錄歷史
     let actionLog = [];
-
-    // 計時器設定（時間取樣法：觀察10秒、記錄10秒）
     const OBSERVE_DURATION = 10;
     const RECORD_DURATION = 10;
     
     let timerRunning = false;
     let timerInterval = null;
-    let currentPhase = 'idle'; // 'observe', 'record', 'idle'
+    let currentPhase = 'idle';
     let phaseTimeLeft = OBSERVE_DURATION;
     let totalSeconds = 0;
     let cycleCount = 0;
 
-    // 頁籤切換
-    function switchTab(tabId) {
+    function switchTab(tabId, evt) {
       document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
       document.querySelectorAll('.system-panel').forEach(panel => panel.classList.remove('active'));
       
-      event.target.classList.add('active');
+      if (evt && evt.currentTarget) {
+        evt.currentTarget.classList.add('active');
+      }
       document.getElementById(tabId).classList.add('active');
     }
 
-    // 計時器邏輯
     function toggleTimer() {
       if (!timerRunning) {
         startTimer();
@@ -222,12 +212,12 @@
           if (currentPhase === 'observe') {
             currentPhase = 'record';
             phaseTimeLeft = RECORD_DURATION;
-            playBeep(800, 0.2); // 切換提示音
+            playBeep(800, 0.2);
           } else {
             currentPhase = 'observe';
             phaseTimeLeft = OBSERVE_DURATION;
             cycleCount++;
-            playBeep(1200, 0.2); // 切換提示音
+            playBeep(1200, 0.2);
           }
         }
         updateTimerUI();
@@ -269,7 +259,6 @@
       document.getElementById('cycle-count-display').innerText = `目前週期: #${cycleCount} (觀察 ${OBSERVE_DURATION}s / 記錄 ${RECORD_DURATION}s)`;
     }
 
-    // 發出簡易提示音
     function playBeep(freq, duration) {
       try {
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -281,7 +270,6 @@
       } catch(e){}
     }
 
-    // --- CAFIAS 觀察系統邏輯 ---
     const cafiasCategories = [
       { id: 1, name: "稱讚鼓勵" },
       { id: 2, name: "接納採用學生觀點" },
@@ -355,7 +343,6 @@
       updateCafiasTable();
     }
 
-    // --- DAC 觀察系統邏輯 ---
     const dacCodes = [2, 12, 3, 13, 4, 14, 5, 15, 6, 16, 7, 17, 8, 18, "8'", "18'", 9, 19, 10, 20];
     const students = Array.from({length: 10}, (_, i) => i + 1);
     let dacMatrix = {};
@@ -437,7 +424,6 @@
       renderDacMatrix();
     }
 
-    // --- CSFI 觀察系統邏輯 ---
     const csfiCategories = [
       { cat: "教師行為", name: "讚美 (2+12)", id: "csfi_2_12" },
       { cat: "教師行為", name: "接納 (3+13)", id: "csfi_3_13" },
@@ -446,7 +432,7 @@
       { cat: "教師行為", name: "給予指導 (6+16)", id: "csfi_6_16" },
       { cat: "教師行為", name: "批評 (7+17)", id: "csfi_7_17" },
       { cat: "學生行為", name: "可預期的反應 (8+18)", id: "csfi_8_18" },
-      { cat: "學生行為", name: "理解性的行為 (8\\+18\\)", id: "csfi_8_18_alt" },
+      { cat: "學生行為", name: "理解性的行為 (8\\\\+18\\\\)", id: "csfi_8_18_alt" },
       { cat: "學生行為", name: "主動的行為 (9+19)", id: "csfi_9_19" },
       { cat: "其他", name: "混亂或安靜 (10/20)", id: "csfi_10_20" }
     ];
@@ -483,4 +469,88 @@
 
     function updateCsfiTable() {
       let grandTotal = 0;
-      csfiCategories.forEach
+      csfiCategories.forEach(item => {
+        grandTotal += csfiData[item.id].verbal + csfiData[item.id].nonVerbal;
+        document.getElementById(`total-${item.id}`).innerText = csfiData[item.id].verbal + csfiData[item.id].nonVerbal;
+      });
+
+      const tbody = document.getElementById('csfi-summary');
+      tbody.innerHTML = '';
+      csfiCategories.forEach(item => {
+        const total = csfiData[item.id].verbal + csfiData[item.id].nonVerbal;
+        const pct = grandTotal > 0 ? ((total / grandTotal) * 100).toFixed(1) : 0;
+        tbody.innerHTML += `
+          <tr>
+            <td>${item.cat}</td>
+            <td>${item.name}</td>
+            <td>口語: ${csfiData[item.id].verbal} | 非口語: ${csfiData[item.id].nonVerbal}</td>
+            <td>${total}</td>
+            <td>${pct}%</td>
+          </tr>
+        `;
+      });
+    }
+
+    function resetCsfi() {
+      csfiCategories.forEach(item => { csfiData[item.id] = { verbal: 0, nonVerbal: 0 }; });
+      updateCsfiTable();
+    }
+
+    function logAction(systemName, description) {
+      actionLog.push({
+        cycle: cycleCount,
+        phase: currentPhase === 'observe' ? '觀察中' : (currentPhase === 'record' ? '記錄中' : '未啟動'),
+        system: systemName,
+        description: description,
+        timestamp: new Date().toLocaleTimeString()
+      });
+    }
+
+    function uploadDataToGoogleSheet() {
+      const statusDiv = document.getElementById('sync-status');
+      statusDiv.style.display = 'block';
+      statusDiv.className = 'sync-loading';
+      statusDiv.innerText = '⏳ 正在將觀察數據同步至 Google 試算表...';
+
+      const payload = {
+        meta: {
+          teacher: document.getElementById('cafias-teacher').value || "未指定",
+          date: document.getElementById('cafias-date').value || new Date().toISOString().split('T')[0],
+          className: document.getElementById('cafias-class').value || "未指定"
+        },
+        actionStack: actionLog
+      };
+
+      fetch(GOOGLE_SCRIPT_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      })
+      .then(() => {
+        statusDiv.className = 'sync-success';
+        statusDiv.innerText = '✅ 資料已成功送出至 Google 試算表！';
+        setTimeout(() => { statusDiv.style.display = 'none'; }, 4000);
+      })
+      .catch(error => {
+        statusDiv.className = 'sync-error';
+        statusDiv.innerText = '❌ 同步失敗，請檢查網路連線：' + error;
+      });
+    }
+
+    window.onload = function() {
+      document.getElementById('cafias-date').valueAsDate = new Date();
+      initCafias();
+      initDac();
+      initCsfi();
+    };
+  </script>
+</body>
+</html>"""
+
+with open("pe_observation_system_fixed.html", "w", encoding="utf-8") as f:
+    f.write(html_code)
+
+print("File generated successfully!")
