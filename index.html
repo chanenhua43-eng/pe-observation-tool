@@ -1,4 +1,4 @@
-html_code = """<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8">
@@ -10,6 +10,7 @@ html_code = """<!DOCTYPE html>
     h1 { text-align: center; color: #2c3e50; margin-bottom: 5px; }
     .subtitle { text-align: center; color: #7f8c8d; margin-bottom: 20px; font-size: 14px; }
     
+    /* Timer Control Card */
     .timer-card { background: #2c3e50; color: white; padding: 15px 20px; border-radius: 8px; margin-bottom: 20px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
     .timer-info { display: flex; align-items: center; gap: 20px; }
     .phase-badge { padding: 8px 16px; border-radius: 20px; font-weight: bold; font-size: 16px; text-transform: uppercase; }
@@ -19,10 +20,12 @@ html_code = """<!DOCTYPE html>
     .time-display { font-size: 24px; font-family: monospace; font-weight: bold; }
     .timer-controls { display: flex; gap: 10px; }
 
+    /* Nav Tabs */
     .tab-container { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; }
     .tab-button { padding: 10px 20px; font-size: 16px; border: none; background: #e0e0e0; cursor: pointer; border-radius: 5px; transition: 0.3s; }
     .tab-button.active { background: #3498db; color: white; font-weight: bold; }
     
+    /* Panels */
     .system-panel { display: none; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
     .system-panel.active { display: block; }
 
@@ -53,6 +56,7 @@ html_code = """<!DOCTYPE html>
 
     .record-log { margin-top: 20px; max-height: 150px; overflow-y: auto; background: #f9f9f9; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px; }
 
+    /* Cloud Sync Status Toast */
     #sync-status { display: none; padding: 10px; margin-top: 10px; border-radius: 4px; text-align: center; font-weight: bold; }
     .sync-success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
     .sync-error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
@@ -64,6 +68,7 @@ html_code = """<!DOCTYPE html>
   <h1>體育教學電腦觀察系統</h1>
   <div class="subtitle">整合 CAFIAS / DAC / CSFI 時間取樣觀察與 Google Sheet 自動串接功能</div>
 
+  <!-- 計時器與控制欄 -->
   <div class="timer-card">
     <div class="timer-info">
       <div id="phase-badge" class="phase-badge phase-idle">未開始</div>
@@ -81,6 +86,7 @@ html_code = """<!DOCTYPE html>
 
   <div id="sync-status"></div>
 
+  <!-- 導覽頁籤 -->
   <div class="tab-container">
     <button class="tab-button active" onclick="switchTab('cafias', event)">CAFIAS 觀察表</button>
     <button class="tab-button" onclick="switchTab('dac', event)">DAC 觀察系統</button>
@@ -171,11 +177,12 @@ html_code = """<!DOCTYPE html>
     
     let timerRunning = false;
     let timerInterval = null;
-    let currentPhase = 'idle';
+    let currentPhase = 'idle'; // 'observe', 'record', 'idle'
     let phaseTimeLeft = OBSERVE_DURATION;
     let totalSeconds = 0;
     let cycleCount = 0;
 
+    // 安全的頁籤切換邏輯
     function switchTab(tabId, evt) {
       document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
       document.querySelectorAll('.system-panel').forEach(panel => panel.classList.remove('active'));
@@ -186,6 +193,7 @@ html_code = """<!DOCTYPE html>
       document.getElementById(tabId).classList.add('active');
     }
 
+    // 計時器邏輯
     function toggleTimer() {
       if (!timerRunning) {
         startTimer();
@@ -270,6 +278,7 @@ html_code = """<!DOCTYPE html>
       } catch(e){}
     }
 
+    // --- CAFIAS ---
     const cafiasCategories = [
       { id: 1, name: "稱讚鼓勵" },
       { id: 2, name: "接納採用學生觀點" },
@@ -343,6 +352,7 @@ html_code = """<!DOCTYPE html>
       updateCafiasTable();
     }
 
+    // --- DAC ---
     const dacCodes = [2, 12, 3, 13, 4, 14, 5, 15, 6, 16, 7, 17, 8, 18, "8'", "18'", 9, 19, 10, 20];
     const students = Array.from({length: 10}, (_, i) => i + 1);
     let dacMatrix = {};
@@ -424,6 +434,7 @@ html_code = """<!DOCTYPE html>
       renderDacMatrix();
     }
 
+    // --- CSFI ---
     const csfiCategories = [
       { cat: "教師行為", name: "讚美 (2+12)", id: "csfi_2_12" },
       { cat: "教師行為", name: "接納 (3+13)", id: "csfi_3_13" },
@@ -432,7 +443,7 @@ html_code = """<!DOCTYPE html>
       { cat: "教師行為", name: "給予指導 (6+16)", id: "csfi_6_16" },
       { cat: "教師行為", name: "批評 (7+17)", id: "csfi_7_17" },
       { cat: "學生行為", name: "可預期的反應 (8+18)", id: "csfi_8_18" },
-      { cat: "學生行為", name: "理解性的行為 (8\\\\+18\\\\)", id: "csfi_8_18_alt" },
+      { cat: "學生行為", name: "理解性的行為 (8+18)", id: "csfi_8_18_alt" },
       { cat: "學生行為", name: "主動的行為 (9+19)", id: "csfi_9_19" },
       { cat: "其他", name: "混亂或安靜 (10/20)", id: "csfi_10_20" }
     ];
@@ -548,9 +559,4 @@ html_code = """<!DOCTYPE html>
     };
   </script>
 </body>
-</html>"""
-
-with open("pe_observation_system_fixed.html", "w", encoding="utf-8") as f:
-    f.write(html_code)
-
-print("File generated successfully!")
+</html>
