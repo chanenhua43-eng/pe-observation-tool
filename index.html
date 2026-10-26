@@ -33,6 +33,8 @@
     .form-group label { font-weight: bold; }
     .form-group input, .form-group select { padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
 
+    .student-focus-box { background: #e8f4f8; border: 1px solid #3498db; padding: 12px; border-radius: 6px; margin-bottom: 15px; display: flex; align-items: center; gap: 15px; }
+
     table { width: 100%; border-collapse: collapse; margin-top: 15px; }
     th, td { border: 1px solid #ddd; padding: 8px 12px; text-align: center; }
     th { background-color: #f2f2f2; }
@@ -45,13 +47,13 @@
     .btn-cloud { background: #8e44ad; color: white; font-weight: bold; }
     .btn:hover { opacity: 0.9; }
 
-    .counter-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; margin-top: 15px; }
+    .counter-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; margin-top: 15px; }
     .counter-card { border: 1px solid #e0e0e0; padding: 12px; border-radius: 6px; text-align: center; background: #fafafa; }
-    .counter-card h4 { margin: 5px 0; font-size: 14px; }
+    .counter-card h4 { margin: 5px 0; font-size: 14px; color: #2c3e50; }
     .count-display { font-size: 22px; font-weight: bold; color: #2c3e50; margin: 5px 0; }
     
-    .mode-btn-group { display: flex; gap: 5px; justify-content: center; }
-    .mode-btn { padding: 5px 8px; font-size: 12px; border: 1px solid #3498db; background: white; color: #3498db; cursor: pointer; border-radius: 3px; }
+    .mode-btn-group { display: flex; gap: 5px; justify-content: center; flex-wrap: wrap; }
+    .mode-btn { padding: 6px 10px; font-size: 12px; border: 1px solid #3498db; background: white; color: #3498db; cursor: pointer; border-radius: 3px; }
     .mode-btn:hover { background: #3498db; color: white; }
 
     .record-log { margin-top: 20px; max-height: 150px; overflow-y: auto; background: #f9f9f9; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px; }
@@ -123,13 +125,16 @@
   <!-- DAC Panel -->
   <div id="dac" class="system-panel">
     <h2>DAC 觀察系統總結記錄表</h2>
-    <div class="form-group">
-      <label>選擇學生代號：</label>
-      <select id="dac-student-select"></select>
-      <label>行為代碼：</label>
-      <select id="dac-code-select"></select>
-      <button class="btn btn-primary" onclick="addDacRecord()">新增紀錄</button>
+    
+    <!-- 當前目標學生選擇 -->
+    <div class="student-focus-box">
+      <label for="dac-student-select"><strong>🎯 目前觀察學生代號：</strong></label>
+      <select id="dac-student-select" style="font-size: 16px; padding: 5px 10px;"></select>
+      <span style="font-size: 13px; color: #555;">(點擊下方行為按鈕時，紀錄將自動歸入此學生代號)</span>
     </div>
+
+    <!-- DAC 卡片按鈕區域 -->
+    <div class="counter-grid" id="dac-counters"></div>
 
     <div class="record-log" id="dac-log"><strong>紀錄歷史：</strong><br></div>
 
@@ -355,38 +360,75 @@
       updateCafiasTable();
     }
 
-    // --- DAC ---
+    // --- DAC 觀察系統 (根據表二定義，轉為卡片按鈕) ---
+    const dacCategories = [
+      { name: "獎勵", verbalCode: 2, nonVerbalCode: 12 },
+      { name: "接納", verbalCode: 3, nonVerbalCode: 13 },
+      { name: "提問", verbalCode: 4, nonVerbalCode: 14 },
+      { name: "提供訊息", verbalCode: 5, nonVerbalCode: 15 },
+      { name: "提供指示", verbalCode: 6, nonVerbalCode: 16 },
+      { name: "評論", verbalCode: 7, nonVerbalCode: 17 },
+      { name: "可以預期的學生反應", verbalCode: 8, nonVerbalCode: 18 },
+      { name: "學生的解釋性行為", verbalCode: "8'", nonVerbalCode: "18'" },
+      { name: "學生的潛意識行為", verbalCode: 9, nonVerbalCode: 19 },
+      { name: "紊亂", singleCode: 10 },
+      { name: "安靜", singleCode: 20 }
+    ];
+
     const dacCodes = [2, 12, 3, 13, 4, 14, 5, 15, 6, 16, 7, 17, 8, 18, "8'", "18'", 9, 19, 10, 20];
     const students = Array.from({length: 10}, (_, i) => i + 1);
     let dacMatrix = {};
 
     function initDac() {
+      // 初始化學生下拉選單
       const stuSelect = document.getElementById('dac-student-select');
       stuSelect.innerHTML = '';
       students.forEach(s => stuSelect.innerHTML += `<option value="${s}">學生 ${s}</option>`);
 
-      const codeSelect = document.getElementById('dac-code-select');
-      codeSelect.innerHTML = '';
-      dacCodes.forEach(c => codeSelect.innerHTML += `<option value="${c}">${c}</option>`);
-
+      // 初始化矩陣資料
       students.forEach(s => {
         dacMatrix[s] = {};
         dacCodes.forEach(c => dacMatrix[s][c] = 0);
       });
 
+      // 渲染 DAC 卡片按鈕
+      const container = document.getElementById('dac-counters');
+      container.innerHTML = '';
+      dacCategories.forEach(cat => {
+        const card = document.createElement('div');
+        card.className = 'counter-card';
+        
+        if (cat.singleCode) {
+          card.innerHTML = `
+            <h4>${cat.name}</h4>
+            <div class="mode-btn-group" style="margin-top: 15px;">
+              <button class="mode-btn" onclick="addDacByCode('${cat.singleCode}', '${cat.name}')">記錄 (${cat.singleCode})</button>
+            </div>
+          `;
+        } else {
+          card.innerHTML = `
+            <h4>${cat.name}</h4>
+            <div class="mode-btn-group" style="margin-top: 10px;">
+              <button class="mode-btn" onclick="addDacByCode('${cat.verbalCode}', '${cat.name}-口語')">口語 (${cat.verbalCode})</button>
+              <button class="mode-btn" onclick="addDacByCode('${cat.nonVerbalCode}', '${cat.name}-非口語')">非口語 (${cat.nonVerbalCode})</button>
+            </div>
+          `;
+        }
+        container.appendChild(card);
+      });
+
       renderDacMatrix();
     }
 
-    function addDacRecord() {
+    function addDacByCode(code, label) {
       const student = document.getElementById('dac-student-select').value;
-      const code = document.getElementById('dac-code-select').value;
       dacMatrix[student][code]++;
       
-      const desc = `學生:${student}, 行為代碼:${code}`;
+      const desc = `學生 ${student}: ${label} (代碼 ${code})`;
       logAction('DAC', desc);
 
       const log = document.getElementById('dac-log');
-      log.innerHTML += `[${new Date().toLocaleTimeString()}] 學生代號: ${student}, 行為代碼: ${code}<br>`;
+      log.innerHTML += `[${new Date().toLocaleTimeString()}] 學生代號: ${student}, 行為代碼: ${code} (${label})<br>`;
       log.scrollTop = log.scrollHeight;
 
       renderDacMatrix();
@@ -437,7 +479,7 @@
       renderDacMatrix();
     }
 
-    // --- CSFI (完整對照表一，包含 88, 89, 99 學生之間行為) ---
+    // --- CSFI ---
     const csfiCategories = [
       { cat: "教師行為", name: "讚美 (2+12)", id: "csfi_2_12" },
       { cat: "教師行為", name: "接納 (3+13)", id: "csfi_3_13" },
