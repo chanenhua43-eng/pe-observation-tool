@@ -1,472 +1,287 @@
 <!DOCTYPE html>
-<html lang="zh-TW" class="h-full bg-slate-50">
+<html lang="zh-TW">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>體育教學觀察電腦系統 (CAFIAS / DAC / CSFI / 時間取樣)</title>
-
-  <!-- Tailwind CSS CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Lucide Icons -->
-  <script src="https://unpkg.com/lucide@latest"></script>
-  
+  <title>體育教學觀察系統 (CAFIAS / DAC / CSFI)</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
-    body {
-      font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    }
-    /* Custom Scrollbar */
-    ::-webkit-scrollbar {
-      width: 6px;
-      height: 6px;
-    }
-    ::-webkit-scrollbar-track {
-      background: #f1f5f9;
-    }
-    ::-webkit-scrollbar-thumb {
-      background: #cbd5e1;
-      border-radius: 4px;
-    }
-    ::-webkit-scrollbar-thumb:hover {
-      background: #94a3b8;
-    }
+    * { box-sizing: border-box; }
+    body { font-family: "PingFang TC", "Microsoft JhengHei", sans-serif; margin: 0; padding: 20px; background-color: #f4f7f6; color: #333; }
+    h1 { text-align: center; color: #2c3e50; margin-bottom: 5px; }
+    .subtitle { text-align: center; color: #7f8c8d; margin-bottom: 20px; font-size: 14px; }
+    
+    /* Timer Control Card */
+    .timer-card { background: #2c3e50; color: white; padding: 15px 20px; border-radius: 8px; margin-bottom: 20px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    .timer-info { display: flex; align-items: center; gap: 20px; }
+    .phase-badge { padding: 8px 16px; border-radius: 20px; font-weight: bold; font-size: 16px; text-transform: uppercase; }
+    .phase-observe { background-color: #2ecc71; color: white; }
+    .phase-record { background-color: #e67e22; color: white; }
+    .phase-idle { background-color: #7f8c8d; color: white; }
+    .time-display { font-size: 24px; font-family: monospace; font-weight: bold; }
+    .timer-controls { display: flex; gap: 10px; }
+
+    /* Nav Tabs */
+    .tab-container { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; }
+    .tab-button { padding: 10px 20px; font-size: 16px; border: none; background: #e0e0e0; cursor: pointer; border-radius: 5px; transition: 0.3s; }
+    .tab-button.active { background: #3498db; color: white; font-weight: bold; }
+    
+    /* Panels */
+    .system-panel { display: none; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    .system-panel.active { display: block; }
+
+    .form-group { margin-bottom: 15px; display: flex; gap: 15px; align-items: center; flex-wrap: wrap; }
+    .form-group label { font-weight: bold; }
+    .form-group input, .form-group select { padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+
+    table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+    th, td { border: 1px solid #ddd; padding: 8px 12px; text-align: center; }
+    th { background-color: #f2f2f2; }
+    
+    .btn { padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; transition: 0.2s; }
+    .btn-primary { background: #2ecc71; color: white; }
+    .btn-warning { background: #f1c40f; color: #333; }
+    .btn-danger { background: #e74c3c; color: white; }
+    .btn-secondary { background: #95a5a6; color: white; }
+    .btn-cloud { background: #8e44ad; color: white; font-weight: bold; }
+    .btn:hover { opacity: 0.9; }
+
+    .counter-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; margin-top: 15px; }
+    .counter-card { border: 1px solid #e0e0e0; padding: 12px; border-radius: 6px; text-align: center; background: #fafafa; }
+    .counter-card h4 { margin: 5px 0; font-size: 14px; }
+    .count-display { font-size: 22px; font-weight: bold; color: #2c3e50; margin: 5px 0; }
+    
+    .mode-btn-group { display: flex; gap: 5px; justify-content: center; }
+    .mode-btn { padding: 5px 8px; font-size: 12px; border: 1px solid #3498db; background: white; color: #3498db; cursor: pointer; border-radius: 3px; }
+    .mode-btn:hover { background: #3498db; color: white; }
+
+    .record-log { margin-top: 20px; max-height: 150px; overflow-y: auto; background: #f9f9f9; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px; }
+
+    /* Cloud Sync Status Toast */
+    #sync-status { display: none; padding: 10px; margin-top: 10px; border-radius: 4px; text-align: center; font-weight: bold; }
+    .sync-success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+    .sync-error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+    .sync-loading { background-color: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
   </style>
 </head>
-<body class="h-full text-slate-800 flex flex-col antialiased selection:bg-indigo-500 selection:text-white">
+<body>
 
-  <!-- TOP HEADER / BRANDING -->
-  <header class="bg-slate-900 text-white border-b border-slate-800 sticky top-0 z-30 shadow-md">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-      <div class="flex items-center gap-3">
-        <div class="p-2 bg-indigo-600 rounded-xl text-white shadow-lg shadow-indigo-500/30">
-          <i data-lucide="activity" class="w-5 h-5"></i>
-        </div>
-        <div>
-          <h1 class="text-base font-bold tracking-tight text-white flex items-center gap-2">
-            體育教學互動觀察分析系統
-            <span class="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-indigo-950 text-indigo-300 border border-indigo-800">v3.0 CSFI/DAC/CAFIAS</span>
-          </h1>
-          <p class="text-xs text-slate-400">體育課時間取樣與雙向互動分析電腦輔助工具</p>
-        </div>
-      </div>
+  <h1>體育教學電腦觀察系統</h1>
+  <div class="subtitle">整合 CAFIAS / DAC / CSFI 時間取樣觀察與 Google Sheet 自動串接功能</div>
 
-      <!-- Quick Session Controls -->
-      <div class="flex items-center gap-2">
-        <button onclick="undoLastAction()" title="撤銷上一筆紀錄 (Ctrl+Z)" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center gap-1.5 transition border border-slate-700">
-          <i data-lucide="undo-2" class="w-3.5 h-3.5 text-amber-400"></i>
-          <span class="hidden sm:inline">撤銷 (Undo)</span>
-        </button>
-        <button onclick="resetCurrentSystemData()" title="重置當前系統數據" class="px-3 py-1.5 rounded-lg bg-rose-950 hover:bg-rose-900 text-rose-200 text-xs font-semibold flex items-center gap-1.5 transition border border-rose-800">
-          <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
-          <span class="hidden sm:inline">清空資料</span>
-        </button>
+  <!-- 計時器與控制欄 -->
+  <div class="timer-card">
+    <div class="timer-info">
+      <div id="phase-badge" class="phase-badge phase-idle">未開始</div>
+      <div>
+        <div class="time-display" id="timer-display">週期倒數: 10s | 總計: 00:00</div>
+        <small id="cycle-count-display">目前週期: #0 (觀察 10s / 記錄 10s)</small>
       </div>
     </div>
-  </header>
-
-  <!-- METADATA & TIMER CONTROL BAR -->
-  <section class="bg-white border-b border-slate-200 shadow-sm z-20">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-center">
-        
-        <!-- Metadata Inputs -->
-        <div class="lg:col-span-6 grid grid-cols-3 gap-2">
-          <div>
-            <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">觀察教師</label>
-            <input type="text" id="meta-teacher" placeholder="張老師" class="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
-          </div>
-          <div>
-            <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">觀察日期</label>
-            <input type="date" id="meta-date" class="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
-          </div>
-          <div>
-            <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">任課班級/年級</label>
-            <input type="text" id="meta-class" placeholder="七年三班" class="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
-          </div>
-        </div>
-
-        <!-- Interval Timer Panel -->
-        <div class="lg:col-span-6 flex items-center justify-between bg-slate-900 text-white rounded-xl p-2.5 shadow-inner border border-slate-800">
-          <div class="flex items-center gap-3">
-            <!-- Play/Pause Button -->
-            <button id="btn-timer-toggle" onclick="toggleTimer()" class="w-10 h-10 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white flex items-center justify-center font-bold shadow-md transition">
-              <i data-lucide="play" id="icon-timer-play" class="w-5 h-5 fill-current"></i>
-            </button>
-
-            <!-- Phase Indicator Badge -->
-            <div id="phase-badge" class="px-3 py-1 rounded-lg text-xs font-black tracking-wider uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex flex-col items-center">
-              <span id="txt-phase-name">觀察中 (OBSERVE)</span>
-              <span id="txt-phase-countdown" class="text-base font-mono font-bold leading-tight">10s</span>
-            </div>
-
-            <!-- Total Elapsed Clock -->
-            <div>
-              <div class="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">總累積時間 / 週期數</div>
-              <div class="text-sm font-mono font-bold text-slate-200">
-                <span id="txt-total-elapsed">00:00</span>
-                <span class="text-slate-500 mx-1">|</span>
-                <span id="txt-cycle-count" class="text-amber-400">週期 #0</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Timer Configuration Trigger Button -->
-          <button onclick="openTimerSettingsModal()" class="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition" title="時間取樣間隔設定">
-            <i data-lucide="sliders" class="w-5 h-5"></i>
-          </button>
-        </div>
-
-      </div>
-    </div>
-  </section>
-
-  <!-- NAVIGATION TABS -->
-  <nav class="bg-slate-100 border-b border-slate-200 sticky top-16 z-10">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="flex space-x-2 py-2 overflow-x-auto no-scrollbar">
-        <button id="tab-btn-cafias" onclick="switchTab('cafias')" class="tab-btn px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 bg-indigo-600 text-white shadow-sm transition">
-          <i data-lucide="layout-grid" class="w-4 h-4"></i>
-          <span>1. CAFIAS 觀察表</span>
-        </button>
-        <button id="tab-btn-dac" onclick="switchTab('dac')" class="tab-btn px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 text-slate-600 hover:bg-slate-200 transition">
-          <i data-lucide="users" class="w-4 h-4"></i>
-          <span>2. DAC 師生個別互動矩陣</span>
-        </button>
-        <button id="tab-btn-csfi" onclick="switchTab('csfi')" class="tab-btn px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 text-slate-600 hover:bg-slate-200 transition">
-          <i data-lucide="git-compare" class="w-4 h-4"></i>
-          <span>3. CSFI 行為類別記錄</span>
-        </button>
-        <button id="tab-btn-history" onclick="switchTab('history')" class="tab-btn px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 text-slate-600 hover:bg-slate-200 transition">
-          <i data-lucide="history" class="w-4 h-4"></i>
-          <span>觀察紀錄軌跡 / 匯出 CSV</span>
-        </button>
-      </div>
-    </div>
-  </nav>
-
-  <!-- MAIN CONTENT BODY -->
-  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
-
-    <!-- ==================== TAB 1: CAFIAS ==================== -->
-    <div id="tab-cafias" class="tab-content space-y-6">
-      <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-4 flex items-start gap-3">
-        <i data-lucide="info" class="w-5 h-5 text-indigo-600 shrink-0 mt-0.5"></i>
-        <div class="text-xs text-indigo-900 leading-relaxed">
-          <strong>CAFIAS 點記說明：</strong>當倒數警報響起進入「記錄階段」時，請針對觀察到的行為點擊以下類別。支援三個記錄維度：<strong>口語 (V)</strong>、<strong>非口語 (NV)</strong>、與 <strong>同時發生 (SIM)</strong>。按鍵盤數字 1-9 可對應點記前9項類別。
-        </div>
-      </div>
-
-      <!-- Counter Input Grid -->
-      <div id="cafias-cards-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-        <!-- Rendered by JS -->
-      </div>
-
-      <!-- Summary Table -->
-      <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        <div class="px-5 py-3 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
-          <h3 class="font-bold text-xs uppercase text-slate-700 tracking-wider flex items-center gap-2">
-            <i data-lucide="bar-chart-2" class="w-4 h-4 text-indigo-600"></i>
-            CAFIAS 觀察統計總結表
-          </h3>
-          <span id="cafias-total-sum" class="text-xs font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-full border border-indigo-200">總計：0 次</span>
-        </div>
-        <div class="overflow-x-auto">
-          <table class="w-full text-xs text-left text-slate-600">
-            <thead class="text-[11px] text-slate-700 uppercase bg-slate-100 border-b border-slate-200 font-bold">
-              <tr>
-                <th scope="col" class="px-4 py-3">類別代碼與名稱</th>
-                <th scope="col" class="px-4 py-3 text-center">口語 (V)</th>
-                <th scope="col" class="px-4 py-3 text-center">非口語 (NV)</th>
-                <th scope="col" class="px-4 py-3 text-center">同時 (SIM)</th>
-                <th scope="col" class="px-4 py-3 text-center">小計 (Subtotal)</th>
-                <th scope="col" class="px-4 py-3 text-right">百分比 (%)</th>
-              </tr>
-            </thead>
-            <tbody id="cafias-summary-tbody" class="divide-y divide-slate-100 font-medium">
-              <!-- Rendered by JS -->
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-
-    <!-- ==================== TAB 2: DAC MATRIX ==================== -->
-    <div id="tab-dac" class="tab-content hidden space-y-6">
-      <div class="bg-emerald-50 border border-emerald-100 rounded-xl p-4 flex items-start gap-3">
-        <i data-lucide="users" class="w-5 h-5 text-emerald-600 shrink-0 mt-0.5"></i>
-        <div class="text-xs text-emerald-900 leading-relaxed">
-          <strong>DAC (Dyadic Adaptation of FIAS) 師生個別互動分析：</strong>紀錄教師與特定學生個別發生的行為對應。請選擇「學生代號 (1-20)」以及發生的「行為代碼」，按下點記即會填入表四觀察系統總結紀錄矩陣中。
-        </div>
-      </div>
-
-      <!-- Quick Entry Bar -->
-      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
-        <div class="md:col-span-4 space-y-1">
-          <label class="block text-xs font-bold text-slate-700">目標學生代號 (Target Student):</label>
-          <select id="dac-input-student" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs font-bold focus:ring-2 focus:ring-emerald-500 focus:outline-none">
-            <!-- Options 1 to 20 -->
-          </select>
-        </div>
-        <div class="md:col-span-5 space-y-1">
-          <label class="block text-xs font-bold text-slate-700">行為代碼 (Behavior Code):</label>
-          <select id="dac-input-code" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs font-bold focus:ring-2 focus:ring-emerald-500 focus:outline-none">
-            <optgroup label="教師行為 (Teacher)">
-              <option value="2">2 - 獎勵 (口語)</option>
-              <option value="12">12 - 獎勵 (非口語)</option>
-              <option value="3">3 - 接納 (口語)</option>
-              <option value="13">13 - 接納 (非口語)</option>
-              <option value="4">4 - 提問 (口語)</option>
-              <option value="14">14 - 提問 (非口語)</option>
-              <option value="5">5 - 提供訊息 (口語)</option>
-              <option value="15">15 - 提供訊息 (非口語)</option>
-              <option value="6">6 - 提供指示 (口語)</option>
-              <option value="16">16 - 提供指示 (非口語)</option>
-              <option value="7">7 - 評論/批評 (口語)</option>
-              <option value="17">17 - 評論/批評 (非口語)</option>
-            </optgroup>
-            <optgroup label="學生行為 (Student)">
-              <option value="8">8 - 可預期的學生反應 (口語)</option>
-              <option value="18">18 - 可預期的學生反應 (非口語)</option>
-              <option value="8'">8' - 學生解釋性行為 (口語)</option>
-              <option value="18'">18' - 學生解釋性行為 (非口語)</option>
-              <option value="9">9 - 學生潛意識/主動行為 (口語)</option>
-              <option value="19">19 - 學生潛意識/主動行為 (非口語)</option>
-            </optgroup>
-            <optgroup label="其他行為 (Others)">
-              <option value="10">10 - 紊亂</option>
-              <option value="20">20 - 安靜</option>
-            </optgroup>
-          </select>
-        </div>
-        <div class="md:col-span-3">
-          <button onclick="recordDacEntry()" class="w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-lg shadow transition flex items-center justify-center gap-1.5">
-            <i data-lucide="plus-circle" class="w-4 h-4"></i>
-            <span>點記 DAC 行為</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- DAC Matrix Table (Matching Reference Screenshot 表四) -->
-      <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        <div class="px-5 py-3 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
-          <h3 class="font-bold text-xs uppercase text-slate-700 tracking-wider flex items-center gap-2">
-            <i data-lucide="grid" class="w-4 h-4 text-emerald-600"></i>
-            表四 DAC 觀察系統總結記錄表 (Dyadic Interaction Matrix)
-          </h3>
-          <span id="dac-matrix-total-count" class="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">總次數：0 次</span>
-        </div>
-        <div class="overflow-x-auto">
-          <table class="w-full text-xs text-center border-collapse">
-            <thead>
-              <tr class="bg-slate-100 text-slate-700 font-bold border-b border-slate-200">
-                <th class="px-3 py-2 border-r border-slate-200 text-left">學生代號 \ 行為代號</th>
-                <!-- Behavior Code Columns -->
-                <th class="px-2 py-2 border-r border-slate-200">2</th>
-                <th class="px-2 py-2 border-r border-slate-200">12</th>
-                <th class="px-2 py-2 border-r border-slate-200">3</th>
-                <th class="px-2 py-2 border-r border-slate-200">13</th>
-                <th class="px-2 py-2 border-r border-slate-200">4</th>
-                <th class="px-2 py-2 border-r border-slate-200">14</th>
-                <th class="px-2 py-2 border-r border-slate-200">5</th>
-                <th class="px-2 py-2 border-r border-slate-200">15</th>
-                <th class="px-2 py-2 border-r border-slate-200">6</th>
-                <th class="px-2 py-2 border-r border-slate-200">16</th>
-                <th class="px-2 py-2 border-r border-slate-200">7</th>
-                <th class="px-2 py-2 border-r border-slate-200">17</th>
-                <th class="px-2 py-2 border-r border-slate-200">8</th>
-                <th class="px-2 py-2 border-r border-slate-200">18</th>
-                <th class="px-2 py-2 border-r border-slate-200">8'</th>
-                <th class="px-2 py-2 border-r border-slate-200">18'</th>
-                <th class="px-2 py-2 border-r border-slate-200">9</th>
-                <th class="px-2 py-2 border-r border-slate-200">19</th>
-                <th class="px-2 py-2 border-r border-slate-200">10</th>
-                <th class="px-2 py-2 border-r border-slate-200">20</th>
-                <th class="px-3 py-2 bg-slate-200/60 border-r border-slate-300 font-black">總數</th>
-                <th class="px-3 py-2 bg-slate-200/60 font-black">百分比 (%)</th>
-              </tr>
-            </thead>
-            <tbody id="dac-matrix-tbody" class="divide-y divide-slate-200 font-mono text-[11px]">
-              <!-- Dynamic Rows for Students 1-20 -->
-            </tbody>
-            <tfoot id="dac-matrix-tfoot" class="bg-slate-100 font-bold border-t-2 border-slate-300 text-[11px]">
-              <!-- Dynamic Total and Percentage Rows -->
-            </tfoot>
-          </table>
-        </div>
-      </div>
-    </div>
-
-
-    <!-- ==================== TAB 3: CSFI ==================== -->
-    <div id="tab-csfi" class="tab-content hidden space-y-6">
-      <div class="bg-amber-50 border border-amber-100 rounded-xl p-4 flex items-start gap-3">
-        <i data-lucide="git-compare" class="w-5 h-5 text-amber-600 shrink-0 mt-0.5"></i>
-        <div class="text-xs text-amber-900 leading-relaxed">
-          <strong>CSFI (Cheffers' System for Interaction Analysis) 觀察對照：</strong>包含同儕互動 (如 88, 89, 99) 等延伸型態之記錄。點選對應項目的「口語 (V)」或「非口語 (NV)」即可記錄一次點記。
-        </div>
-      </div>
-
-      <!-- CSFI Interactive Cards -->
-      <div id="csfi-cards-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-        <!-- Rendered by JS -->
-      </div>
-
-      <!-- CSFI Summary Table -->
-      <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        <div class="px-5 py-3 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
-          <h3 class="font-bold text-xs uppercase text-slate-700 tracking-wider flex items-center gap-2">
-            <i data-lucide="list-checks" class="w-4 h-4 text-amber-600"></i>
-            CSFI 行為類別觀察統計總表
-          </h3>
-          <span id="csfi-total-sum" class="text-xs font-bold text-amber-700 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200">總計：0 次</span>
-        </div>
-        <div class="overflow-x-auto">
-          <table class="w-full text-xs text-left text-slate-600">
-            <thead class="text-[11px] text-slate-700 uppercase bg-slate-100 border-b border-slate-200 font-bold">
-              <tr>
-                <th scope="col" class="px-4 py-3">行為分類</th>
-                <th scope="col" class="px-4 py-3">CSFI 行為類別及代碼</th>
-                <th scope="col" class="px-4 py-3 text-center">口語 (V)</th>
-                <th scope="col" class="px-4 py-3 text-center">非口語 (NV)</th>
-                <th scope="col" class="px-4 py-3 text-center">小計 (Subtotal)</th>
-                <th scope="col" class="px-4 py-3 text-right">百分比 (%)</th>
-              </tr>
-            </thead>
-            <tbody id="csfi-summary-tbody" class="divide-y divide-slate-100 font-medium">
-              <!-- Rendered by JS -->
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-
-    <!-- ==================== TAB 4: HISTORY & EXPORT ==================== -->
-    <div id="tab-history" class="tab-content hidden space-y-6">
-      <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
-        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-          <div>
-            <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
-              <i data-lucide="history" class="w-5 h-5 text-indigo-600"></i>
-              <span>觀察紀錄時間軌跡 (Action Log Stack)</span>
-            </h2>
-            <p class="text-xs text-slate-500 mt-0.5">顯示每一次點記的精確時間戳記、週期數與系統歸類。</p>
-          </div>
-          <button onclick="exportLogsToCSV()" class="px-3.5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 shadow transition">
-            <i data-lucide="download" class="w-4 h-4"></i>
-            <span>匯出完整 CSV 報表</span>
-          </button>
-        </div>
-
-        <div class="overflow-x-auto max-h-[400px] rounded-lg border border-slate-200">
-          <table class="w-full text-xs text-left text-slate-600">
-            <thead class="text-[11px] text-slate-700 uppercase bg-slate-100 border-b border-slate-200 font-bold sticky top-0">
-              <tr>
-                <th scope="col" class="px-4 py-2.5">#</th>
-                <th scope="col" class="px-4 py-2.5">時間戳記</th>
-                <th scope="col" class="px-4 py-2.5">週期 (Cycle)</th>
-                <th scope="col" class="px-4 py-2.5">階段 (Phase)</th>
-                <th scope="col" class="px-4 py-2.5">觀察系統</th>
-                <th scope="col" class="px-4 py-2.5">詳細內容</th>
-              </tr>
-            </thead>
-            <tbody id="history-log-tbody" class="divide-y divide-slate-100 font-mono text-[11px]">
-              <!-- Dynamic Log List -->
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-  </main>
-
-
-  <!-- INTERVAL SAMPLING TIMER SETTINGS MODAL -->
-  <div id="timer-settings-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
-    <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 space-y-5 border border-slate-100">
-      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-        <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
-          <i data-lucide="clock" class="w-5 h-5 text-indigo-600"></i>
-          <span>時間取樣 (Interval Sampling) 計時器設定</span>
-        </h3>
-        <button onclick="closeTimerSettingsModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
-          <i data-lucide="x" class="w-5 h-5"></i>
-        </button>
-      </div>
-
-      <div class="space-y-4">
-        <!-- Preset Quick Selections -->
-        <div>
-          <label class="block text-xs font-bold text-slate-700 mb-1.5">快速預設模式 (Presets)</label>
-          <div class="grid grid-cols-3 gap-2">
-            <button onclick="setTimerPresets(10, 10)" class="px-3 py-2 border rounded-lg text-xs font-bold bg-slate-50 hover:bg-indigo-50 hover:border-indigo-300 text-slate-700 hover:text-indigo-700 transition">
-              10s 觀察 / 10s 記錄
-            </button>
-            <button onclick="setTimerPresets(5, 5)" class="px-3 py-2 border rounded-lg text-xs font-bold bg-slate-50 hover:bg-indigo-50 hover:border-indigo-300 text-slate-700 hover:text-indigo-700 transition">
-              5s 觀察 / 5s 記錄
-            </button>
-            <button onclick="setTimerPresets(3, 3)" class="px-3 py-2 border rounded-lg text-xs font-bold bg-slate-50 hover:bg-indigo-50 hover:border-indigo-300 text-slate-700 hover:text-indigo-700 transition">
-              3s 觀察 / 3s 記錄
-            </button>
-          </div>
-        </div>
-
-        <!-- Custom Duration Controls -->
-        <div class="grid grid-cols-2 gap-3 pt-2 border-t border-slate-100">
-          <div>
-            <label class="block text-xs font-bold text-emerald-700 mb-1">觀察階段秒數 (Observe):</label>
-            <input type="number" id="cfg-observe-sec" value="10" min="1" max="300" class="w-full px-3 py-2 border rounded-lg text-xs font-mono font-bold focus:ring-2 focus:ring-emerald-500">
-          </div>
-          <div>
-            <label class="block text-xs font-bold text-amber-700 mb-1">記錄階段秒數 (Record):</label>
-            <input type="number" id="cfg-record-sec" value="10" min="1" max="300" class="w-full px-3 py-2 border rounded-lg text-xs font-mono font-bold focus:ring-2 focus:ring-amber-500">
-          </div>
-        </div>
-
-        <!-- Audio Alert Toggle -->
-        <div class="pt-2 border-t border-slate-100 flex items-center justify-between">
-          <span class="text-xs font-bold text-slate-700">階段轉換聲光警報 (Beep Sound):</span>
-          <label class="relative inline-flex items-center cursor-pointer">
-            <input type="checkbox" id="cfg-audio-enable" checked class="sr-only peer">
-            <div class="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
-          </label>
-        </div>
-      </div>
-
-      <div class="pt-3 border-t border-slate-100 flex justify-end gap-2">
-        <button onclick="closeTimerSettingsModal()" class="px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs">取消</button>
-        <button onclick="saveTimerSettings()" class="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow">儲存設定</button>
-      </div>
+    <div class="timer-controls">
+      <button class="btn btn-primary" id="start-btn" onclick="toggleTimer()">開始觀察計時</button>
+      <button class="btn btn-secondary" onclick="resetTimer()">重置計時器</button>
+      <button class="btn btn-cloud" onclick="uploadDataToGoogleSheet()">☁️ 同步至 Google 試算表</button>
     </div>
   </div>
 
+  <div id="sync-status"></div>
 
-  <!-- APPLICATION JAVASCRIPT LOGIC -->
+  <!-- 導覽頁籤 -->
+  <div class="tab-container">
+    <button class="tab-button active" onclick="switchTab('cafias')">CAFIAS 觀察表</button>
+    <button class="tab-button" onclick="switchTab('dac')">DAC 觀察系統</button>
+    <button class="tab-button" onclick="switchTab('csfi')">CSFI 對照記錄</button>
+  </div>
+
+  <!-- CAFIAS Panel -->
+  <div id="cafias" class="system-panel active">
+    <h2>CAFIAS 系統觀察量表</h2>
+    <div class="form-group">
+      <label>觀察教師：</label><input type="text" id="cafias-teacher" placeholder="輸入教師姓名">
+      <label>觀察日期：</label><input type="date" id="cafias-date">
+      <label>任課班級：</label><input type="text" id="cafias-class" placeholder="如：八年二班">
+    </div>
+
+    <div class="counter-grid" id="cafias-counters"></div>
+
+    <h3>觀察統計結果</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>行為類別</th>
+          <th>型式 (口語 / 非口語 / 同時)</th>
+          <th>次數合計</th>
+          <th>百分比 (%)</th>
+        </tr>
+      </thead>
+      <tbody id="cafias-summary"></tbody>
+    </table>
+    <br>
+    <button class="btn btn-danger" onclick="resetCafias()">重置數據</button>
+  </div>
+
+  <!-- DAC Panel -->
+  <div id="dac" class="system-panel">
+    <h2>DAC 觀察系統總結記錄表</h2>
+    <div class="form-group">
+      <label>選擇學生代號：</label>
+      <select id="dac-student-select"></select>
+      <label>行為代碼：</label>
+      <select id="dac-code-select"></select>
+      <button class="btn btn-primary" onclick="addDacRecord()">新增紀錄</button>
+    </div>
+
+    <div class="record-log" id="dac-log"><strong>紀錄歷史：</strong><br></div>
+
+    <h3>DAC 統計矩陣</h3>
+    <div style="overflow-x:auto;">
+      <table>
+        <thead>
+          <tr id="dac-header-row"><th>學生代號</th></tr>
+        </thead>
+        <tbody id="dac-body-rows"></tbody>
+      </table>
+    </div>
+    <br>
+    <button class="btn btn-danger" onclick="resetDac()">重置數據</button>
+  </div>
+
+  <!-- CSFI Panel -->
+  <div id="csfi" class="system-panel">
+    <h2>CSFI 觀察紀錄表</h2>
+    <div class="counter-grid" id="csfi-counters"></div>
+
+    <h3>CSFI 行為次數統計</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>分類</th>
+          <th>行為類別及代碼</th>
+          <th>型式</th>
+          <th>次數</th>
+          <th>百分比 (%)</th>
+        </tr>
+      </thead>
+      <tbody id="csfi-summary"></tbody>
+    </table>
+    <br>
+    <button class="btn btn-danger" onclick="resetCsfi()">重置數據</button>
+  </div>
+
   <script>
-    // --- Application State ---
-    let audioCtx = null;
-    let isAudioEnabled = true;
+    // 直接嵌入您的 Google Apps Script 部署 URL
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx5_MORjdhWNBLCKyLD64sA3KxAOFt3JAzIlYn-9KGHs5hUney1-1PMtZXcV0lJsOCA/exec";
 
-    // Timer Settings
-    let observeDuration = 10; // seconds
-    let recordDuration = 10;  // seconds
-    let currentPhase = 'OBSERVE'; // 'OBSERVE' or 'RECORD'
-    let phaseSecondsRemaining = 10;
-    let totalElapsedSeconds = 0;
-    let currentCycleNumber = 0;
-    let isTimerRunning = false;
+    // 全局資料記錄歷史
+    let actionLog = [];
+
+    // 計時器設定（時間取樣法：觀察10秒、記錄10秒）
+    const OBSERVE_DURATION = 10;
+    const RECORD_DURATION = 10;
+    
+    let timerRunning = false;
     let timerInterval = null;
+    let currentPhase = 'idle'; // 'observe', 'record', 'idle'
+    let phaseTimeLeft = OBSERVE_DURATION;
+    let totalSeconds = 0;
+    let cycleCount = 0;
 
-    // Navigation Active Tab
-    let currentActiveTab = 'cafias';
+    // 頁籤切換
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.system-panel').forEach(panel => panel.classList.remove('active'));
+      
+      event.target.classList.add('active');
+      document.getElementById(tabId).classList.add('active');
+    }
 
-    // Global Action Stack for Undo & Log
-    let actionStack = [];
+    // 計時器邏輯
+    function toggleTimer() {
+      if (!timerRunning) {
+        startTimer();
+      } else {
+        pauseTimer();
+      }
+    }
 
-    // --- Data Definitions ---
+    function startTimer() {
+      timerRunning = true;
+      document.getElementById('start-btn').innerText = "暫停計時";
+      if (currentPhase === 'idle') {
+        currentPhase = 'observe';
+        phaseTimeLeft = OBSERVE_DURATION;
+        cycleCount = 1;
+      }
+      updateTimerUI();
 
-    // CAFIAS Categories
+      timerInterval = setInterval(() => {
+        totalSeconds++;
+        phaseTimeLeft--;
+
+        if (phaseTimeLeft <= 0) {
+          if (currentPhase === 'observe') {
+            currentPhase = 'record';
+            phaseTimeLeft = RECORD_DURATION;
+            playBeep(800, 0.2); // 切換提示音
+          } else {
+            currentPhase = 'observe';
+            phaseTimeLeft = OBSERVE_DURATION;
+            cycleCount++;
+            playBeep(1200, 0.2); // 切換提示音
+          }
+        }
+        updateTimerUI();
+      }, 1000);
+    }
+
+    function pauseTimer() {
+      timerRunning = false;
+      clearInterval(timerInterval);
+      document.getElementById('start-btn').innerText = "繼續計時";
+    }
+
+    function resetTimer() {
+      pauseTimer();
+      currentPhase = 'idle';
+      phaseTimeLeft = OBSERVE_DURATION;
+      totalSeconds = 0;
+      cycleCount = 0;
+      document.getElementById('start-btn').innerText = "開始觀察計時";
+      updateTimerUI();
+    }
+
+    function updateTimerUI() {
+      const badge = document.getElementById('phase-badge');
+      if (currentPhase === 'observe') {
+        badge.innerText = "觀察中 (Observe)";
+        badge.className = "phase-badge phase-observe";
+      } else if (currentPhase === 'record') {
+        badge.innerText = "記錄中 (Record)";
+        badge.className = "phase-badge phase-record";
+      } else {
+        badge.innerText = "未開始";
+        badge.className = "phase-badge phase-idle";
+      }
+
+      const totalMins = String(Math.floor(totalSeconds / 60)).padStart(2, '0');
+      const totalSecs = String(totalSeconds % 60).padStart(2, '0');
+      document.getElementById('timer-display').innerText = `週期倒數: ${phaseTimeLeft}s | 總計: ${totalMins}:${totalSecs}`;
+      document.getElementById('cycle-count-display').innerText = `目前週期: #${cycleCount} (觀察 ${OBSERVE_DURATION}s / 記錄 ${RECORD_DURATION}s)`;
+    }
+
+    // 發出簡易提示音
+    function playBeep(freq, duration) {
+      try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = audioCtx.createOscillator();
+        osc.frequency.value = freq;
+        osc.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+      } catch(e){}
+    }
+
+    // --- CAFIAS 觀察系統邏輯 ---
     const cafiasCategories = [
       { id: 1, name: "稱讚鼓勵" },
       { id: 2, name: "接納採用學生觀點" },
@@ -479,13 +294,150 @@
       { id: 9, name: "主動行為" },
       { id: 10, name: "安靜或混淆" }
     ];
-    let cafiasCounts = {};
 
-    // DAC Behavior Codes & Matrix
-    const dacCodes = ["2", "12", "3", "13", "4", "14", "5", "15", "6", "16", "7", "17", "8", "18", "8'", "18'", "9", "19", "10", "20"];
-    let dacMatrixData = {}; // studentId -> code -> count
+    let cafiasData = {};
+    cafiasCategories.forEach(c => { cafiasData[c.id] = { verbal: 0, nonVerbal: 0, simultaneous: 0 }; });
 
-    // CSFI Category Items
+    function initCafias() {
+      const container = document.getElementById('cafias-counters');
+      container.innerHTML = '';
+      cafiasCategories.forEach(c => {
+        const card = document.createElement('div');
+        card.className = 'counter-card';
+        card.innerHTML = `
+          <h4>${c.id}. ${c.name}</h4>
+          <div class="count-display" id="cafias-total-${c.id}">0</div>
+          <div class="mode-btn-group">
+            <button class="mode-btn" onclick="addCafias(${c.id}, 'verbal')">口語</button>
+            <button class="mode-btn" onclick="addCafias(${c.id}, 'nonVerbal')">非口語</button>
+            <button class="mode-btn" onclick="addCafias(${c.id}, 'simultaneous')">同時</button>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+      updateCafiasTable();
+    }
+
+    function addCafias(id, type) {
+      cafiasData[id][type]++;
+      const typeText = type === 'verbal' ? '口語' : (type === 'nonVerbal' ? '非口語' : '同時');
+      const catName = cafiasCategories.find(c => c.id === id).name;
+      logAction('CAFIAS', `${id}.${catName} (${typeText})`);
+      updateCafiasTable();
+    }
+
+    function updateCafiasTable() {
+      let totalAll = 0;
+      cafiasCategories.forEach(c => {
+        totalAll += cafiasData[c.id].verbal + cafiasData[c.id].nonVerbal + cafiasData[c.id].simultaneous;
+        document.getElementById(`cafias-total-${c.id}`).innerText = 
+          cafiasData[c.id].verbal + cafiasData[c.id].nonVerbal + cafiasData[c.id].simultaneous;
+      });
+
+      const tbody = document.getElementById('cafias-summary');
+      tbody.innerHTML = '';
+      cafiasCategories.forEach(c => {
+        const total = cafiasData[c.id].verbal + cafiasData[c.id].nonVerbal + cafiasData[c.id].simultaneous;
+        const pct = totalAll > 0 ? ((total / totalAll) * 100).toFixed(1) : 0;
+        tbody.innerHTML += `
+          <tr>
+            <td>${c.id}. ${c.name}</td>
+            <td>口語: ${cafiasData[c.id].verbal} | 非口語: ${cafiasData[c.id].nonVerbal} | 同時: ${cafiasData[c.id].simultaneous}</td>
+            <td>${total}</td>
+            <td>${pct}%</td>
+          </tr>
+        `;
+      });
+    }
+
+    function resetCafias() {
+      cafiasCategories.forEach(c => { cafiasData[c.id] = { verbal: 0, nonVerbal: 0, simultaneous: 0 }; });
+      updateCafiasTable();
+    }
+
+    // --- DAC 觀察系統邏輯 ---
+    const dacCodes = [2, 12, 3, 13, 4, 14, 5, 15, 6, 16, 7, 17, 8, 18, "8'", "18'", 9, 19, 10, 20];
+    const students = Array.from({length: 10}, (_, i) => i + 1);
+    let dacMatrix = {};
+
+    function initDac() {
+      const stuSelect = document.getElementById('dac-student-select');
+      stuSelect.innerHTML = '';
+      students.forEach(s => stuSelect.innerHTML += `<option value="${s}">學生 ${s}</option>`);
+
+      const codeSelect = document.getElementById('dac-code-select');
+      codeSelect.innerHTML = '';
+      dacCodes.forEach(c => codeSelect.innerHTML += `<option value="${c}">${c}</option>`);
+
+      students.forEach(s => {
+        dacMatrix[s] = {};
+        dacCodes.forEach(c => dacMatrix[s][c] = 0);
+      });
+
+      renderDacMatrix();
+    }
+
+    function addDacRecord() {
+      const student = document.getElementById('dac-student-select').value;
+      const code = document.getElementById('dac-code-select').value;
+      dacMatrix[student][code]++;
+      
+      const desc = `學生:${student}, 行為代碼:${code}`;
+      logAction('DAC', desc);
+
+      const log = document.getElementById('dac-log');
+      log.innerHTML += `[${new Date().toLocaleTimeString()}] 學生代號: ${student}, 行為代碼: ${code}<br>`;
+      log.scrollTop = log.scrollHeight;
+
+      renderDacMatrix();
+    }
+
+    function renderDacMatrix() {
+      const headerRow = document.getElementById('dac-header-row');
+      headerRow.innerHTML = '<th>學生代號</th>';
+      dacCodes.forEach(c => headerRow.innerHTML += `<th>${c}</th>`);
+      headerRow.innerHTML += '<th>總數</th><th>百分比 (%)</th>';
+
+      const bodyRows = document.getElementById('dac-body-rows');
+      bodyRows.innerHTML = '';
+
+      let grandTotal = 0;
+      let colTotals = {};
+      dacCodes.forEach(c => colTotals[c] = 0);
+
+      students.forEach(s => {
+        let rowTotal = 0;
+        dacCodes.forEach(c => rowTotal += dacMatrix[s][c]);
+        grandTotal += rowTotal;
+      });
+
+      students.forEach(s => {
+        let rowTotal = 0;
+        let rowHTML = `<tr><td>${s}</td>`;
+        dacCodes.forEach(c => {
+          const count = dacMatrix[s][c];
+          rowTotal += count;
+          colTotals[c] += count;
+          rowHTML += `<td>${count || ''}</td>`;
+        });
+        const pct = grandTotal > 0 ? ((rowTotal / grandTotal) * 100).toFixed(1) : 0;
+        rowHTML += `<td><strong>${rowTotal}</strong></td><td>${pct}%</td></tr>`;
+        bodyRows.innerHTML += rowHTML;
+      });
+
+      let totalRowHTML = '<tr><td><strong>總數</strong></td>';
+      dacCodes.forEach(c => totalRowHTML += `<td><strong>${colTotals[c]}</strong></td>`);
+      totalRowHTML += `<td><strong>${grandTotal}</strong></td><td>100%</td></tr>`;
+      bodyRows.innerHTML += totalRowHTML;
+    }
+
+    function resetDac() {
+      students.forEach(s => { dacCodes.forEach(c => dacMatrix[s][c] = 0); });
+      document.getElementById('dac-log').innerHTML = '<strong>紀錄歷史：</strong><br>';
+      renderDacMatrix();
+    }
+
+    // --- CSFI 觀察系統邏輯 ---
     const csfiCategories = [
       { cat: "教師行為", name: "讚美 (2+12)", id: "csfi_2_12" },
       { cat: "教師行為", name: "接納 (3+13)", id: "csfi_3_13" },
@@ -494,545 +446,41 @@
       { cat: "教師行為", name: "給予指導 (6+16)", id: "csfi_6_16" },
       { cat: "教師行為", name: "批評 (7+17)", id: "csfi_7_17" },
       { cat: "學生行為", name: "可預期的反應 (8+18)", id: "csfi_8_18" },
-      { cat: "學生行為", name: "學生之間可預期的反應 (88)", id: "csfi_88" },
-      { cat: "學生行為", name: "理解性的行為 (8'+18')", id: "csfi_8alt_18alt" },
-      { cat: "學生行為", name: "學生之間理解性的行為 (89)", id: "csfi_89" },
+      { cat: "學生行為", name: "理解性的行為 (8\\+18\\)", id: "csfi_8_18_alt" },
       { cat: "學生行為", name: "主動的行為 (9+19)", id: "csfi_9_19" },
-      { cat: "學生行為", name: "學生之間主動的行為 (99)", id: "csfi_99" },
       { cat: "其他", name: "混亂或安靜 (10/20)", id: "csfi_10_20" }
     ];
-    let csfiCounts = {};
 
+    let csfiData = {};
+    csfiCategories.forEach(item => { csfiData[item.id] = { verbal: 0, nonVerbal: 0 }; });
 
-    // Window Load Initialization
-    window.onload = function() {
-      document.getElementById('meta-date').value = new Date().toISOString().split('T')[0];
-
-      // Load saved Google Sheet URL from LocalStorage if present
-      const savedGSheetUrl = localStorage.getItem('pe_gsheet_url') || '';
-      if (document.getElementById('cfg-gsheet-url')) {
-        document.getElementById('cfg-gsheet-url').value = savedGSheetUrl;
-      }
-
-      resetAllDataStructures();
-      renderCafiasGrid();
-      renderCafiasSummaryTable();
-
-      renderDacStudentGrid();
-      renderDacMatrixTable();
-
-      renderCsfiGrid();
-      renderCsfiSummaryTable();
-
-      setupKeyboardShortcuts();
-      updatePhaseBannerDisplay();
-
-      lucide.createIcons();
-    };
-
-    function resetAllDataStructures() {
-      // CAFIAS Reset
-      cafiasCategories.forEach(c => {
-        cafiasCounts[c.id] = { V: 0, NV: 0, SIM: 0 };
-      });
-
-      // DAC Reset
-      dacMatrixData = {};
-      for (let s = 1; s <= 20; s++) {
-        dacMatrixData[s] = {};
-        dacCodes.forEach(code => dacMatrixData[s][code] = 0);
-      }
-
-      // CSFI Reset
-      csfiCategories.forEach(item => {
-        csfiCounts[item.id] = { V: 0, NV: 0 };
-      });
-
-      actionStack = [];
-      renderHistoryLogTable();
-    }
-
-
-    // --- TAB SWITCHING MECHANISM ---
-    function switchTab(tabKey) {
-      currentActiveTab = tabKey;
-      document.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.classList.remove('bg-indigo-600', 'text-white', 'shadow-sm');
-        btn.classList.add('text-slate-600', 'hover:bg-slate-200');
-      });
-      document.querySelectorAll('.tab-content').forEach(content => content.classList.add('hidden'));
-
-      const targetBtn = document.getElementById(`tab-btn-${tabKey}`);
-      const targetContent = document.getElementById(`tab-${tabKey}`);
-
-      if (targetBtn && targetContent) {
-        targetBtn.classList.remove('text-slate-600', 'hover:bg-slate-200');
-        targetBtn.classList.add('bg-indigo-600', 'text-white', 'shadow-sm');
-        targetContent.classList.remove('hidden');
-      }
-
-      if (tabKey === 'gsheet') {
-        updateGSheetPreview();
-      }
-    }
-
-
-    // --- INTERVAL SAMPLING TIMER ENGINE ---
-    function toggleTimer() {
-      if (isTimerRunning) {
-        pauseTimer();
-      } else {
-        startTimer();
-      }
-    }
-
-    function startTimer() {
-      if (!audioCtx && isAudioEnabled) {
-        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      }
-      isTimerRunning = true;
-      document.getElementById('btn-timer-toggle').classList.remove('bg-emerald-600', 'hover:bg-emerald-500');
-      document.getElementById('btn-timer-toggle').classList.add('bg-amber-600', 'hover:bg-amber-500');
-      document.getElementById('icon-timer-play').setAttribute('data-lucide', 'pause');
-      lucide.createIcons();
-
-      timerInterval = setInterval(handleTimerTick, 1000);
-    }
-
-    function pauseTimer() {
-      isTimerRunning = false;
-      clearInterval(timerInterval);
-      document.getElementById('btn-timer-toggle').classList.remove('bg-amber-600', 'hover:bg-amber-500');
-      document.getElementById('btn-timer-toggle').classList.add('bg-emerald-600', 'hover:bg-emerald-500');
-      document.getElementById('icon-timer-play').setAttribute('data-lucide', 'play');
-      lucide.createIcons();
-    }
-
-    function handleTimerTick() {
-      totalElapsedSeconds++;
-      phaseSecondsRemaining--;
-
-      if (phaseSecondsRemaining <= 0) {
-        // Phase Transition Trigger
-        if (currentPhase === 'OBSERVE') {
-          currentPhase = 'RECORD';
-          phaseSecondsRemaining = recordDuration;
-          playBeepSound(880, 0.25); // Higher Beep for Record Phase
-        } else {
-          currentPhase = 'OBSERVE';
-          phaseSecondsRemaining = observeDuration;
-          currentCycleNumber++;
-          playBeepSound(440, 0.15); // Normal Beep for Observe Phase
-        }
-      }
-
-      updateTimerClockDisplay();
-      updatePhaseBannerDisplay();
-    }
-
-    function updateTimerClockDisplay() {
-      const mins = Math.floor(totalElapsedSeconds / 60).toString().padStart(2, '0');
-      const secs = (totalElapsedSeconds % 60).toString().padStart(2, '0');
-      document.getElementById('txt-total-elapsed').innerText = `${mins}:${secs}`;
-      document.getElementById('txt-cycle-count').innerText = `周期 #${currentCycleNumber}`;
-    }
-
-    function updatePhaseBannerDisplay() {
-      const phaseBadge = document.getElementById('phase-badge');
-      const phaseName = document.getElementById('txt-phase-name');
-      const phaseCountdown = document.getElementById('txt-phase-countdown');
-
-      phaseCountdown.innerText = `${phaseSecondsRemaining}s`;
-
-      if (currentPhase === 'OBSERVE') {
-        phaseName.innerText = '觀察中 (OBSERVE)';
-        phaseBadge.className = 'px-3 py-1 rounded-lg text-xs font-black uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex flex-col items-center';
-      } else {
-        phaseName.innerText = '記錄中 (RECORD)';
-        phaseBadge.className = 'px-3 py-1 rounded-lg text-xs font-black uppercase bg-amber-500/20 text-amber-300 border border-amber-500/30 flex flex-col items-center animate-pulse';
-      }
-    }
-
-    function playBeepSound(freq, duration) {
-      if (!isAudioEnabled || !audioCtx) return;
-      try {
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        osc.start();
-        osc.stop(audioCtx.currentTime + duration);
-      } catch (e) {
-        console.warn('Audio Context error:', e);
-      }
-    }
-
-    // Modal Control Functions for Timer Settings
-    function openTimerSettingsModal() {
-      document.getElementById('timer-settings-modal').classList.remove('hidden');
-    }
-
-    function closeTimerSettingsModal() {
-      document.getElementById('timer-settings-modal').classList.add('hidden');
-    }
-
-    function setTimerPresets(obs, rec) {
-      document.getElementById('cfg-observe-sec').value = obs;
-      document.getElementById('cfg-record-sec').value = rec;
-    }
-
-    function saveTimerSettings() {
-      const obs = parseInt(document.getElementById('cfg-observe-sec').value) || 10;
-      const rec = parseInt(document.getElementById('cfg-record-sec').value) || 10;
-      observeDuration = obs;
-      recordDuration = rec;
-      isAudioEnabled = document.getElementById('cfg-audio-enable').checked;
-
-      // Reset phase timer
-      currentPhase = 'OBSERVE';
-      phaseSecondsRemaining = observeDuration;
-      updatePhaseBannerDisplay();
-      closeTimerSettingsModal();
-    }
-
-
-    // --- CAFIAS LOGIC & RENDERING ---
-    function renderCafiasGrid() {
-      const grid = document.getElementById('cafias-cards-grid');
-      grid.innerHTML = '';
-
-      cafiasCategories.forEach(cat => {
-        const card = document.createElement('div');
-        card.className = "bg-white p-3 rounded-xl border border-slate-200 shadow-sm hover:shadow transition flex flex-col justify-between space-y-2";
-        card.innerHTML = `
-          <div>
-            <div class="flex items-center justify-between">
-              <span class="text-[10px] font-bold text-slate-400 font-mono">#${cat.id}</span>
-              <span id="cafias-badge-${cat.id}" class="text-[11px] font-extrabold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">0</span>
-            </div>
-            <h4 class="text-xs font-bold text-slate-800 mt-1">${cat.name}</h4>
-          </div>
-          <div class="grid grid-cols-3 gap-1 pt-1">
-            <button onclick="recordCafiasEntry(${cat.id}, 'V')" class="py-1.5 bg-slate-100 hover:bg-indigo-600 hover:text-white text-slate-700 rounded font-bold text-[11px] transition">口語</button>
-            <button onclick="recordCafiasEntry(${cat.id}, 'NV')" class="py-1.5 bg-slate-100 hover:bg-indigo-600 hover:text-white text-slate-700 rounded font-bold text-[11px] transition">非口語</button>
-            <button onclick="recordCafiasEntry(${cat.id}, 'SIM')" class="py-1.5 bg-slate-100 hover:bg-indigo-600 hover:text-white text-slate-700 rounded font-bold text-[11px] transition">同時</button>
-          </div>
-        `;
-        grid.appendChild(card);
-      });
-    }
-
-    function recordCafiasEntry(catId, type) {
-      cafiasCounts[catId][type]++;
-      pushActionToStack({
-        system: 'CAFIAS',
-        catId: catId,
-        type: type,
-        description: `CAFIAS: ${cafiasCategories.find(c=>c.id===catId).name} (${type})`
-      });
-      renderCafiasSummaryTable();
-    }
-
-    function renderCafiasSummaryTable() {
-      const tbody = document.getElementById('cafias-summary-tbody');
-      tbody.innerHTML = '';
-
-      let totalOverall = 0;
-      cafiasCategories.forEach(c => {
-        const counts = cafiasCounts[c.id];
-        totalOverall += counts.V + counts.NV + counts.SIM;
-      });
-
-      cafiasCategories.forEach(c => {
-        const counts = cafiasCounts[c.id];
-        const subtotal = counts.V + counts.NV + counts.SIM;
-        const pct = totalOverall > 0 ? ((subtotal / totalOverall) * 100).toFixed(1) : '0.0';
-
-        // Update card badge
-        const badge = document.getElementById(`cafias-badge-${c.id}`);
-        if (badge) badge.innerText = subtotal;
-
-        const tr = document.createElement('tr');
-        tr.className = "hover:bg-slate-50 transition";
-        tr.innerHTML = `
-          <td class="px-4 py-2.5 font-bold text-slate-800">${c.id}. ${c.name}</td>
-          <td class="px-4 py-2.5 text-center font-mono">${counts.V}</td>
-          <td class="px-4 py-2.5 text-center font-mono">${counts.NV}</td>
-          <td class="px-4 py-2.5 text-center font-mono">${counts.SIM}</td>
-          <td class="px-4 py-2.5 text-center font-mono font-bold text-indigo-600">${subtotal}</td>
-          <td class="px-4 py-2.5 text-right font-mono font-bold">${pct}%</td>
-        `;
-        tbody.appendChild(tr);
-      });
-
-      document.getElementById('cafias-total-sum').innerText = `總計：${totalOverall} 次`;
-    }
-
-
-    // --- DAC LOGIC & RENDERING ---
-    function renderDacStudentGrid() {
-      const select = document.getElementById('dac-input-student');
-      select.innerHTML = '';
-      for (let i = 1; i <= 20; i++) {
-        select.innerHTML += `<option value="${i}">學生 ${i} 號</option>`;
-      }
-    }
-
-    function recordDacEntry() {
-      const studentId = parseInt(document.getElementById('dac-input-student').value);
-      const code = document.getElementById('dac-input-code').value;
-
-      if (!dacMatrixData[studentId]) dacMatrixData[studentId] = {};
-      dacMatrixData[studentId][code] = (dacMatrixData[studentId][code] || 0) + 1;
-
-      pushActionToStack({
-        system: 'DAC',
-        studentId: studentId,
-        code: code,
-        description: `DAC: 學生 ${studentId} 號 $\\rightarrow$ 行為代號 ${code}`
-      });
-
-      renderDacMatrixTable();
-    }
-
-    function renderDacMatrixTable() {
-      const tbody = document.getElementById('dac-matrix-tbody');
-      const tfoot = document.getElementById('dac-matrix-tfoot');
-      tbody.innerHTML = '';
-      tfoot.innerHTML = '';
-
-      let grandTotal = 0;
-      let colTotals = {};
-      dacCodes.forEach(code => colTotals[code] = 0);
-
-      // Calculate totals
-      for (let s = 1; s <= 20; s++) {
-        dacCodes.forEach(code => {
-          const val = dacMatrixData[s][code] || 0;
-          colTotals[code] += val;
-          grandTotal += val;
-        });
-      }
-
-      // Render 20 Student Rows
-      for (let s = 1; s <= 20; s++) {
-        let rowSum = 0;
-        let tds = `<td class="px-3 py-1.5 border-r border-slate-200 text-left font-bold text-slate-700 bg-slate-50">學生 ${s}</td>`;
-
-        dacCodes.forEach(code => {
-          const val = dacMatrixData[s][code] || 0;
-          rowSum += val;
-          tds += `<td class="px-2 py-1.5 border-r border-slate-100 ${val > 0 ? 'bg-emerald-50 text-emerald-800 font-bold' : 'text-slate-300'}">${val || '.'}</td>`;
-        });
-
-        const rowPct = grandTotal > 0 ? ((rowSum / grandTotal) * 100).toFixed(1) : '0.0';
-        tds += `<td class="px-3 py-1.5 border-r border-slate-200 bg-slate-100 font-bold text-slate-800">${rowSum}</td>`;
-        tds += `<td class="px-3 py-1.5 font-bold text-slate-600">${rowPct}%</td>`;
-
-        const tr = document.createElement('tr');
-        tr.innerHTML = tds;
-        tbody.appendChild(tr);
-      }
-
-      // Render Footer Rows (Totals & Percentages)
-      let totalTds = `<td class="px-3 py-2 border-r border-slate-200 text-left font-black text-slate-800">總數 Sum</td>`;
-      let pctTds = `<td class="px-3 py-2 border-r border-slate-200 text-left font-black text-slate-800">百分比 %</td>`;
-
-      dacCodes.forEach(code => {
-        const cTotal = colTotals[code];
-        const cPct = grandTotal > 0 ? ((cTotal / grandTotal) * 100).toFixed(1) : '0.0';
-        totalTds += `<td class="px-2 py-2 border-r border-slate-200 text-emerald-700 font-black">${cTotal}</td>`;
-        pctTds += `<td class="px-2 py-2 border-r border-slate-200 text-slate-600 font-bold">${cPct}</td>`;
-      });
-
-      totalTds += `<td class="px-3 py-2 border-r border-slate-200 bg-slate-200 font-black text-emerald-800">${grandTotal}</td><td class="px-3 py-2 bg-slate-200 font-black">100%</td>`;
-      pctTds += `<td class="px-3 py-2 border-r border-slate-200">-</td><td class="px-3 py-2">-</td>`;
-
-      tfoot.innerHTML = `<tr>${totalTds}</tr><tr>${pctTds}</tr>`;
-      document.getElementById('dac-matrix-total-count').innerText = `總次數：${grandTotal} 次`;
-    }
-
-
-    // --- CSFI LOGIC & RENDERING ---
-    function renderCsfiGrid() {
-      const grid = document.getElementById('csfi-cards-grid');
-      grid.innerHTML = '';
-
+    function initCsfi() {
+      const container = document.getElementById('csfi-counters');
+      container.innerHTML = '';
       csfiCategories.forEach(item => {
         const card = document.createElement('div');
-        card.className = "bg-white p-3 rounded-xl border border-slate-200 shadow-sm hover:shadow transition flex flex-col justify-between space-y-2";
+        card.className = 'counter-card';
         card.innerHTML = `
-          <div>
-            <span class="text-[10px] font-bold text-amber-600 uppercase tracking-wider">${item.cat}</span>
-            <h4 class="text-xs font-bold text-slate-800 mt-0.5">${item.name}</h4>
-          </div>
-          <div class="grid grid-cols-2 gap-1.5 pt-1">
-            <button onclick="recordCsfiEntry('${item.id}', 'V')" class="py-1.5 bg-slate-100 hover:bg-amber-600 hover:text-white text-slate-700 rounded font-bold text-[11px] transition">口語 (V)</button>
-            <button onclick="recordCsfiEntry('${item.id}', 'NV')" class="py-1.5 bg-slate-100 hover:bg-amber-600 hover:text-white text-slate-700 rounded font-bold text-[11px] transition">非口語 (NV)</button>
+          <h4>${item.name}</h4>
+          <div class="count-display" id="total-${item.id}">0</div>
+          <div class="mode-btn-group">
+            <button class="mode-btn" onclick="addCsfi('${item.id}', 'verbal')">口語</button>
+            <button class="mode-btn" onclick="addCsfi('${item.id}', 'nonVerbal')">非口語</button>
           </div>
         `;
-        grid.appendChild(card);
+        container.appendChild(card);
       });
+      updateCsfiTable();
     }
 
-    function recordCsfiEntry(id, type) {
-      csfiCounts[id][type]++;
-      pushActionToStack({
-        system: 'CSFI',
-        csfiId: id,
-        type: type,
-        description: `CSFI: ${csfiCategories.find(c=>c.id===id).name} (${type})`
-      });
-      renderCsfiSummaryTable();
+    function addCsfi(id, type) {
+      csfiData[id][type]++;
+      const typeText = type === 'verbal' ? '口語' : '非口語';
+      const itemName = csfiCategories.find(item => item.id === id).name;
+      logAction('CSFI', `${itemName} (${typeText})`);
+      updateCsfiTable();
     }
 
-    function renderCsfiSummaryTable() {
-      const tbody = document.getElementById('csfi-summary-tbody');
-      tbody.innerHTML = '';
-
+    function updateCsfiTable() {
       let grandTotal = 0;
-      csfiCategories.forEach(item => {
-        grandTotal += csfiCounts[item.id].V + csfiCounts[item.id].NV;
-      });
-
-      csfiCategories.forEach(item => {
-        const counts = csfiCounts[item.id];
-        const subtotal = counts.V + counts.NV;
-        const pct = grandTotal > 0 ? ((subtotal / grandTotal) * 100).toFixed(1) : '0.0';
-
-        const tr = document.createElement('tr');
-        tr.className = "hover:bg-slate-50 transition";
-        tr.innerHTML = `
-          <td class="px-4 py-2.5 font-bold text-amber-800">${item.cat}</td>
-          <td class="px-4 py-2.5 font-bold text-slate-800">${item.name}</td>
-          <td class="px-4 py-2.5 text-center font-mono">${counts.V}</td>
-          <td class="px-4 py-2.5 text-center font-mono">${counts.NV}</td>
-          <td class="px-4 py-2.5 text-center font-mono font-bold text-amber-600">${subtotal}</td>
-          <td class="px-4 py-2.5 text-right font-mono font-bold">${pct}%</td>
-        `;
-        tbody.appendChild(tr);
-      });
-
-      document.getElementById('csfi-total-sum').innerText = `總計：${grandTotal} 次`;
-    }
-
-
-    // --- ACTION STACK & HISTORY LOG ENGINE ---
-    function pushActionToStack(action) {
-      const now = new Date();
-      action.timestamp = now.toLocaleTimeString();
-      action.cycle = currentCycleNumber;
-      action.phase = currentPhase;
-
-      actionStack.push(action);
-      renderHistoryLogTable();
-    }
-
-    function undoLastAction() {
-      if (actionStack.length === 0) return;
-      const last = actionStack.pop();
-
-      if (last.system === 'CAFIAS') {
-        cafiasCounts[last.catId][last.type] = Math.max(0, cafiasCounts[last.catId][last.type] - 1);
-        renderCafiasSummaryTable();
-      } else if (last.system === 'DAC') {
-        dacMatrixData[last.studentId][last.code] = Math.max(0, dacMatrixData[last.studentId][last.code] - 1);
-        renderDacMatrixTable();
-      } else if (last.system === 'CSFI') {
-        csfiCounts[last.csfiId][last.type] = Math.max(0, csfiCounts[last.csfiId][last.type] - 1);
-        renderCsfiSummaryTable();
-      }
-
-      renderHistoryLogTable();
-    }
-
-    function renderHistoryLogTable() {
-      const tbody = document.getElementById('history-log-tbody');
-      tbody.innerHTML = '';
-
-      actionStack.slice().reverse().forEach((act, idx) => {
-        const tr = document.createElement('tr');
-        tr.className = "hover:bg-slate-50 transition";
-        tr.innerHTML = `
-          <td class="px-4 py-2 text-slate-400">${actionStack.length - idx}</td>
-          <td class="px-4 py-2 font-mono text-slate-600">${act.timestamp}</td>
-          <td class="px-4 py-2 font-bold text-amber-600">Cycle #${act.cycle}</td>
-          <td class="px-4 py-2"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${act.phase==='OBSERVE'?'bg-emerald-100 text-emerald-800':'bg-amber-100 text-amber-800'}">${act.phase}</span></td>
-          <td class="px-4 py-2 font-bold text-indigo-600">${act.system}</td>
-          <td class="px-4 py-2 text-slate-700">${act.description}</td>
-        `;
-        tbody.appendChild(tr);
-      });
-    }
-
-    function resetCurrentSystemData() {
-      if (confirm('確定要清空並重置所有觀察數據與歷史紀錄嗎？')) {
-        resetAllDataStructures();
-        renderCafiasSummaryTable();
-        renderDacMatrixTable();
-        renderCsfiSummaryTable();
-      }
-    }
-
-
-    // --- KEYBOARD SHORTCUTS ---
-    function setupKeyboardShortcuts() {
-      window.addEventListener('keydown', (e) => {
-        if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA') return;
-
-        // Undo Shortcut (Ctrl+Z)
-        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
-          e.preventDefault();
-          undoLastAction();
-          return;
-        }
-
-        // Toggle Timer (Spacebar)
-        if (e.code === 'Space') {
-          e.preventDefault();
-          toggleTimer();
-          return;
-        }
-
-        // Number Keys 1-9 for CAFIAS Quick Log
-        if (e.key >= '1' && e.key <= '9') {
-          const catId = parseInt(e.key);
-          recordCafiasEntry(catId, 'V');
-        }
-      });
-    }
-
-
-    // --- EXPORT TO CSV ---
-    function exportLogsToCSV() {
-      if (actionStack.length === 0) {
-        alert('目前無任何觀察紀錄可匯出。');
-        return;
-      }
-
-      let csv = '\uFEFF'; // UTF-8 BOM
-      csv += '時間戳記,觀察教師,日期,班級,週期(Cycle),階段(Phase),觀察系統,記錄描述\n';
-
-      const teacher = document.getElementById('meta-teacher').value || '';
-      const date = document.getElementById('meta-date').value || '';
-      const className = document.getElementById('meta-class').value || '';
-
-      actionStack.forEach(act => {
-        csv += `"${act.timestamp}","${teacher}","${date}","${className}","${act.cycle}","${act.phase}","${act.system}","${act.description}"\n`;
-      });
-
-      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.setAttribute('href', url);
-      link.setAttribute('download', `PE_Observation_Log_${date || 'export'}.csv`);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    }
-  </script>
-</body>
-</html>
+      csfiCategories.forEach
