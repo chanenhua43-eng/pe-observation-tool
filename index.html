@@ -43,11 +43,11 @@
     
     .btn { padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; transition: 0.2s; }
     .btn-primary { background: #2ecc71; color: white; }
-    .btn-warning { background: #f1c40f; color: #333; }
+    .btn-undo { background: #e67e22; color: white; font-weight: bold; }
     .btn-danger { background: #e74c3c; color: white; }
     .btn-secondary { background: #95a5a6; color: white; }
     .btn-cloud { background: #8e44ad; color: white; font-weight: bold; }
-    .btn-pdf { background: #e67e22; color: white; font-weight: bold; }
+    .btn-pdf { background: #34495e; color: white; font-weight: bold; }
     .btn:hover { opacity: 0.9; }
 
     .counter-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; margin-top: 15px; }
@@ -66,8 +66,9 @@
     .sync-success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
     .sync-error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
     .sync-loading { background-color: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+
+    .action-header { display: flex; justify-content: space-between; align-items: center; margin-top: 15px; }
   </style>
-  <!-- 載入 HTML 轉 PDF 工具庫 -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
 <body>
@@ -83,7 +84,6 @@
         <div class="time-display" id="timer-display">週期倒數: 10s | 總計: 00:00</div>
         <small id="cycle-count-display">目前週期: #0 (觀察 10s / 記錄 10s)</small>
       </div>
-      <!-- 自訂倒數秒數設定區域 -->
       <div class="timer-setting-inputs">
         <label>觀察秒數:</label>
         <input type="number" id="setting-observe-sec" value="10" min="1" onchange="updateTimerSettings()">
@@ -94,6 +94,7 @@
     <div class="timer-controls">
       <button class="btn btn-primary" id="start-btn" onclick="toggleTimer()">開始觀察計時</button>
       <button class="btn btn-secondary" onclick="resetTimer()">重置計時器</button>
+      <button class="btn btn-undo" onclick="undoLastAction()">↩️ 復原按錯 (Undo)</button>
       <button class="btn btn-pdf" onclick="generatePDFReport()">📄 匯出 PDF 觀察報表</button>
       <button class="btn btn-cloud" onclick="uploadDataToGoogleSheet()">☁️ 同步至 Google 試算表</button>
     </div>
@@ -119,7 +120,10 @@
 
     <div class="counter-grid" id="cafias-counters"></div>
 
-    <h3>觀察統計結果</h3>
+    <div class="action-header">
+      <h3>觀察統計結果</h3>
+      <button class="btn btn-undo" onclick="undoLastAction()">↩️ 復原按錯 (Undo)</button>
+    </div>
     <table>
       <thead>
         <tr>
@@ -144,19 +148,20 @@
       <label>任課班級：</label><input type="text" class="meta-class" placeholder="如：八年二班" oninput="syncMetaInfo(this)">
     </div>
     
-    <!-- 當前目標學生選擇 -->
     <div class="student-focus-box">
       <label for="dac-student-select"><strong>🎯 目前觀察學生代號：</strong></label>
       <select id="dac-student-select" style="font-size: 16px; padding: 5px 10px;"></select>
       <span style="font-size: 13px; color: #555;">(點擊下方行為按鈕時，紀錄將自動歸入此學生代號)</span>
     </div>
 
-    <!-- DAC 卡片按鈕區域 -->
     <div class="counter-grid" id="dac-counters"></div>
 
     <div class="record-log" id="dac-log"><strong>紀錄歷史：</strong><br></div>
 
-    <h3>DAC 統計矩陣</h3>
+    <div class="action-header">
+      <h3>DAC 統計矩陣</h3>
+      <button class="btn btn-undo" onclick="undoLastAction()">↩️ 復原按錯 (Undo)</button>
+    </div>
     <div style="overflow-x:auto;">
       <table>
         <thead>
@@ -180,7 +185,10 @@
 
     <div class="counter-grid" id="csfi-counters"></div>
 
-    <h3>CSFI 行為次數統計</h3>
+    <div class="action-header">
+      <h3>CSFI 行為次數統計</h3>
+      <button class="btn btn-undo" onclick="undoLastAction()">↩️ 復原按錯 (Undo)</button>
+    </div>
     <table>
       <thead>
         <tr>
@@ -373,7 +381,7 @@
       cafiasData[id][type]++;
       const typeText = type === 'verbal' ? '口語' : (type === 'nonVerbal' ? '非口語' : '同時');
       const catName = cafiasCategories.find(c => c.id === id).name;
-      logAction('CAFIAS', `${id}.${catName} (${typeText})`);
+      logAction('CAFIAS', `${id}.${catName} (${typeText})`, { targetSystem: 'CAFIAS', id: id, type: type });
       updateCafiasTable();
     }
 
@@ -468,13 +476,19 @@
       dacMatrix[student][code]++;
       
       const desc = `學生 ${student}: ${label} (代碼 ${code})`;
-      logAction('DAC', desc);
+      logAction('DAC', desc, { targetSystem: 'DAC', student: student, code: code });
 
-      const log = document.getElementById('dac-log');
-      log.innerHTML += `[${new Date().toLocaleTimeString()}] 學生代號: ${student}, 行為代碼: ${code} (${label})<br>`;
-      log.scrollTop = log.scrollHeight;
-
+      renderDacLogUI();
       renderDacMatrix();
+    }
+
+    function renderDacLogUI() {
+      const log = document.getElementById('dac-log');
+      log.innerHTML = '<strong>紀錄歷史：</strong><br>';
+      actionLog.filter(item => item.system === 'DAC').forEach(item => {
+        log.innerHTML += `[${item.timestamp}] ${item.description}<br>`;
+      });
+      log.scrollTop = log.scrollHeight;
     }
 
     function renderDacMatrix() {
@@ -518,7 +532,8 @@
 
     function resetDac() {
       students.forEach(s => { dacCodes.forEach(c => dacMatrix[s][c] = 0); });
-      document.getElementById('dac-log').innerHTML = '<strong>紀錄歷史：</strong><br>';
+      actionLog = actionLog.filter(item => item.system !== 'DAC');
+      renderDacLogUI();
       renderDacMatrix();
     }
 
@@ -565,7 +580,7 @@
       csfiData[id][type]++;
       const typeText = type === 'verbal' ? '口語' : '非口語';
       const itemName = csfiCategories.find(item => item.id === id).name;
-      logAction('CSFI', `${itemName} (${typeText})`);
+      logAction('CSFI', `${itemName} (${typeText})`, { targetSystem: 'CSFI', id: id, type: type });
       updateCsfiTable();
     }
 
@@ -598,17 +613,56 @@
       updateCsfiTable();
     }
 
-    function logAction(systemName, description) {
+    // 紀錄動作 Log
+    function logAction(systemName, description, metaDetail) {
       actionLog.push({
         cycle: cycleCount,
         phase: currentPhase === 'observe' ? '觀察中' : (currentPhase === 'record' ? '記錄中' : '未啟動'),
         system: systemName,
         description: description,
+        metaDetail: metaDetail,
         timestamp: new Date().toLocaleTimeString()
       });
     }
 
-    // 匯出 PDF 報表功能
+    // ↩️ 復原按錯功能 (Undo Function)
+    function undoLastAction() {
+      if (actionLog.length === 0) {
+        alert("目前沒有可以復原的紀錄！");
+        return;
+      }
+
+      const lastItem = actionLog.pop(); // 彈出最後一筆紀錄
+      const meta = lastItem.metaDetail;
+
+      if (meta) {
+        if (meta.targetSystem === 'CAFIAS') {
+          if (cafiasData[meta.id] && cafiasData[meta.id][meta.type] > 0) {
+            cafiasData[meta.id][meta.type]--;
+            updateCafiasTable();
+          }
+        } else if (meta.targetSystem === 'DAC') {
+          if (dacMatrix[meta.student] && dacMatrix[meta.student][meta.code] > 0) {
+            dacMatrix[meta.student][meta.code]--;
+            renderDacLogUI();
+            renderDacMatrix();
+          }
+        } else if (meta.targetSystem === 'CSFI') {
+          if (csfiData[meta.id] && csfiData[meta.id][meta.type] > 0) {
+            csfiData[meta.id][meta.type]--;
+            updateCsfiTable();
+          }
+        }
+      }
+
+      const statusDiv = document.getElementById('sync-status');
+      statusDiv.style.display = 'block';
+      statusDiv.className = 'sync-success';
+      statusDiv.innerText = `↩️ 已成功復原：${lastItem.system} - ${lastItem.description}`;
+      setTimeout(() => { statusDiv.style.display = 'none'; }, 3000);
+    }
+
+    // 生成 PDF 報表功能
     function generatePDFReport() {
       const teacherVal = document.querySelector('.meta-teacher').value || '未填寫';
       const dateVal = document.querySelector('.meta-date').value || new Date().toISOString().split('T')[0];
@@ -678,6 +732,14 @@
         statusDiv.innerText = '❌ 同步失敗，請檢查網路連線：' + error;
       });
     }
+
+    // 全域鍵盤快捷鍵觸發 (Ctrl+Z 或 Cmd+Z)
+    document.addEventListener('keydown', function(e) {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+        e.preventDefault();
+        undoLastAction();
+      }
+    });
 
     window.onload = function() {
       const todayStr = new Date().toISOString().split('T')[0];
